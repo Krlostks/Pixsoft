@@ -2,6 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { Footer } from "@/components/footer"
+import { Header } from "@/components/header"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,7 +22,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <Header />
       <body className={`${inter.className} font-sans antialiased`}>{children}</body>
+      <Footer />
     </html>
   )
 }
