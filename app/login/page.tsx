@@ -11,7 +11,6 @@ import axios from "axios"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
-import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -19,18 +18,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { authenticated, admin } = useAuth()
-  const router = useRouter()
 
   // Redirigir si ya está autenticado
   useEffect(() => {
     if (authenticated) {
       if (admin) {
-        router.push("/admin/")
+        window.location.href = "/admin"
       } else {
-        router.push("/")
+        window.location.href = "/"
       }
     }
-  }, [authenticated, admin, router])
+  }, [authenticated, admin])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,9 +64,9 @@ export default function LoginPage() {
         
         // Redirigir según el rol
         if (userData.role === 'admin') {
-          router.push("/admin")
+          window.location.href = "/admin"
         } else {
-          router.push("/")
+          window.location.href = "/"
         }
       }
     } catch (error) {
@@ -134,9 +132,6 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-foreground font-medium">
                   Contraseña
                 </Label>
-                <Link href="/forgot-password" className="text-sm text-primary hover:text-accent transition-colors">
-                  ¿Olvidaste tu contraseña?
-                </Link>
               </div>
               <div className="relative">
                 <Icons.lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />

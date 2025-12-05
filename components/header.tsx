@@ -273,8 +273,7 @@ export function Header() {
                       className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-600 rounded-b-xl"
                       onClick={() => {
                         Cookies.remove("token")
-                        localStorage.removeItem("token")
-                        window.location.reload()
+                        window.location.href = "/"
                       }}
                     >
                       Cerrar sesión
