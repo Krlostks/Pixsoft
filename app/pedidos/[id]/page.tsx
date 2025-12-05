@@ -13,6 +13,7 @@ import {
 
 import OrderDetail from "@/components/pedidos/OrderDetail"
 import { Button } from "@/components/ui/button"
+import ProtectedRoute from "@/components/auth/ProtectedRoute" // Importar
 
 interface DetallePedido {
   id: number
@@ -64,7 +65,7 @@ interface PedidoDetallado {
   facturacion_codigo_postal?: string
 }
 
-export default function PedidoDetailPage() {
+function PedidoDetailContent() {
   const params = useParams()
   const router = useRouter()
   const [pedido, setPedido] = useState<PedidoDetallado | null>(null)
@@ -142,43 +143,6 @@ export default function PedidoDetailPage() {
       const errorMessage = error.response?.data || "Error al cancelar el pedido"
       toast.error(errorMessage)
     }
-  }
-
-  // Si no hay token, mostrar mensaje para iniciar sesión
-  if (!token && !isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <main className="pt-10 pb-20">
-          <div className="container mx-auto px-4">
-            <div className="glass rounded-3xl p-12 text-center max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-secondary/50 flex items-center justify-center">
-                <PackageIcon className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                Acceso requerido
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Debes iniciar sesión para ver los detalles del pedido
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/login"
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-all duration-300"
-                >
-                  Iniciar Sesión
-                </Link>
-                <Link
-                  href="/"
-                  className="px-6 py-3 glass rounded-2xl font-medium hover:bg-secondary/50 transition-all duration-300"
-                >
-                  Volver al inicio
-                </Link>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
   }
 
   return (
@@ -292,5 +256,13 @@ export default function PedidoDetailPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function PedidoDetailPage() {
+  return (
+    <ProtectedRoute>
+      <PedidoDetailContent />
+    </ProtectedRoute>
   )
 }

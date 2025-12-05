@@ -13,6 +13,7 @@ import axios from "axios"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
 import Link from "next/link"
+import ProtectedRoute from "@/components/auth/ProtectedRoute" // Importar
 
 interface CartItem {
   id_carrito: number
@@ -33,7 +34,7 @@ interface CartResponse {
   message?: string
 }
 
-export default function CartPage() {
+function CartContent() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [total, setTotal] = useState("0.00")
   const [isLoading, setIsLoading] = useState(true)
@@ -171,53 +172,6 @@ export default function CartPage() {
       console.error("Error al vaciar carrito:", error)
       toast.error("Error al vaciar el carrito")
     }
-  }
-
-  // Si no hay token, mostrar mensaje para iniciar sesión
-  if (!token && !isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <main className="pt-10 pb-20">
-          <div className="container mx-auto px-4">
-            <div className="mb-8">
-              <Link
-                href="/productos"
-                className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors duration-300 mb-6"
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-                <span>Ver los productos</span>
-              </Link>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Mi Carrito</h1>
-              <p className="text-muted-foreground">Gestiona tus productos antes de la compra</p>
-            </div>
-
-            <div className="glass rounded-3xl p-12 text-center max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-secondary/50 flex items-center justify-center">
-                <ShoppingCartIcon className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Carrito vacío</h3>
-              <p className="text-muted-foreground mb-6">
-                Debes iniciar sesión para ver tu carrito de compras
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/login"
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-all duration-300"
-                >
-                  Iniciar Sesión
-                </Link>
-                <Link
-                  href="/productos"
-                  className="px-6 py-3 glass rounded-2xl font-medium hover:bg-secondary/50 transition-all duration-300"
-                >
-                  Ver Productos
-                </Link>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
   }
 
   return (
@@ -443,5 +397,13 @@ export default function CartPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function CartPage() {
+  return (
+    <ProtectedRoute>
+      <CartContent />
+    </ProtectedRoute>
   )
 }

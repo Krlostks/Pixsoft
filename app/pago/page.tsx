@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import ProtectedRoute from "@/components/auth/ProtectedRoute" // Importar
 
 interface CartItem {
   id_carrito: number
@@ -57,11 +58,7 @@ interface ShippingRate {
   service?: string
 }
 
-interface PaymentPageProps {
-  addressId: number
-}
-
-export default function PaymentPage({ addressId }: PaymentPageProps) {
+function PaymentContent() {
   const router = useRouter()
   const [token, setToken] = useState<string | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
@@ -700,5 +697,13 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PaymentPage() {
+  return (
+    <ProtectedRoute>
+      <PaymentContent />
+    </ProtectedRoute>
   )
 }

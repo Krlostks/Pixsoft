@@ -15,6 +15,7 @@ import OrderCard from "@/components/pedidos/OrderCard"
 import EmptyOrders from "@/components/pedidos/EmptyOrders"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import ProtectedRoute from "@/components/auth/ProtectedRoute" // Importar
 
 interface DetallePedido {
   id: number
@@ -40,7 +41,7 @@ interface Pedido {
   iva: string | number
 }
 
-export default function PedidosPage() {
+function PedidosContent() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [token, setToken] = useState<string | null>(null)
@@ -120,59 +121,6 @@ export default function PedidosPage() {
   const pedidosFiltrados = filtroEstado === "todos" 
     ? pedidos 
     : pedidos.filter(pedido => pedido.estado_orden === filtroEstado)
-
-  // Si no hay token, mostrar mensaje para iniciar sesión
-  if (!token && !isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <main className="pt-10 pb-20">
-          <div className="container mx-auto px-4">
-            <div className="mb-8">
-              <Link
-                href="/perfil"
-                className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors duration-300 mb-6"
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-                <span>Volver al perfil</span>
-              </Link>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Mis Pedidos
-              </h1>
-              <p className="text-muted-foreground">
-                Revisa el historial y estado de tus pedidos
-              </p>
-            </div>
-
-            <div className="glass rounded-3xl p-12 text-center max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-secondary/50 flex items-center justify-center">
-                <PackageIcon className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                Acceso requerido
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Debes iniciar sesión para ver tus pedidos
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/login"
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-all duration-300"
-                >
-                  Iniciar Sesión
-                </Link>
-                <Link
-                  href="/"
-                  className="px-6 py-3 glass rounded-2xl font-medium hover:bg-secondary/50 transition-all duration-300"
-                >
-                  Volver al inicio
-                </Link>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -270,5 +218,13 @@ export default function PedidosPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function PedidosPage() {
+  return (
+    <ProtectedRoute>
+      <PedidosContent />
+    </ProtectedRoute>
   )
 }
