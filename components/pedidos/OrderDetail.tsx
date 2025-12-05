@@ -10,7 +10,9 @@ import {
   MapPinIcon,
   FileTextIcon,
   HomeIcon,
-  CalendarIcon
+  CalendarIcon,
+  PenLineIcon,
+  StarIcon
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +21,9 @@ import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import Link from "next/link"
+import { Textarea } from "../ui/textarea"
+import { DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog"
+import { useState } from "react"
 
 interface DetallePedido {
   id: number
@@ -72,6 +77,80 @@ interface OrderDetailProps {
 }
 
 export default function OrderDetail({ pedido, onCancel }: OrderDetailProps) {
+  const [selectedRating, setSelectedRating] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
+  const [comentario, setComentario] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+const handleSubmitReview = async (productoId: number, ventaId: number) => {
+  if (!selectedRating || !comentario.trim()) return;
+
+  try {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1];
+
+    if (!token) {
+      alert("Debes iniciar sesión para dejar una reseña.");
+      return;
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/opiniones`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        producto_id: productoId,  // Debes pasar el id del producto actual
+        venta_id: ventaId,        // Debes pasar el id de la venta correspondiente
+        calificacion: selectedRating,
+        comentario: comentario.trim()
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Error al enviar la reseña:', data);
+      alert(data.error || 'Error al enviar la reseña');
+      return;
+    }
+
+    // Opcional: mostrar mensaje de éxito
+    alert('Reseña enviada correctamente');
+
+    // Limpiar inputs
+    setSelectedRating(0);
+    setComentario('');
+    setDialogOpen(false);
+
+    // Opcional: actualizar la lista de reseñas en la UI
+    // fetchReviews(); <-- Si tienes una función que carga las reseñas del producto
+
+  } catch (err) {
+    console.error('Error al enviar la reseña:', err);
+    alert('Error al enviar la reseña');
+  }
+};
+
+
+  const toNumber = (value: string | number): number => typeof value === 'string' ? parseFloat(value) : value
+  const total = toNumber(pedido.total)
+  const subtotal = toNumber(pedido.subtotal)
+  const descuento = toNumber(pedido.descuento)
+  const envio = toNumber(pedido.envio)
+  const iva = toNumber(pedido.iva)
+  
+
+  const productosNormales = pedido.detalles.filter(d => !d.es_arrendamiento)
+  const productosArrendados = pedido.detalles.filter(d => d.es_arrendamiento)
+  const idVenta = pedido.id;
+
+  const fechaCreacion = format(new Date(pedido.fecha_creacion), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
+  const fechaActualizacion = format(new Date(pedido.fecha_actualizacion), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
+
   const getEstadoOrdenColor = (estado: string) => {
     switch (estado) {
       case 'pendiente': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
@@ -104,25 +183,9 @@ export default function OrderDetail({ pedido, onCancel }: OrderDetailProps) {
     }
   }
 
-  const fechaCreacion = format(new Date(pedido.fecha_creacion), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
-  const fechaActualizacion = format(new Date(pedido.fecha_actualizacion), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
-
-  // Funciones para convertir strings a números
-  const toNumber = (value: string | number): number => {
-    return typeof value === 'string' ? parseFloat(value) : value
-  }
-
-  const total = toNumber(pedido.total)
-  const subtotal = toNumber(pedido.subtotal)
-  const descuento = toNumber(pedido.descuento)
-  const envio = toNumber(pedido.envio)
-  const iva = toNumber(pedido.iva)
-
-  const productosNormales = pedido.detalles.filter(d => !d.es_arrendamiento)
-  const productosArrendados = pedido.detalles.filter(d => d.es_arrendamiento)
-
   return (
     <div className="space-y-6">
+
       {/* Encabezado del pedido */}
       <Card className="glass rounded-3xl dark:bg-secondary/20">
         <CardContent className="p-6">
@@ -146,56 +209,50 @@ export default function OrderDetail({ pedido, onCancel }: OrderDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground dark:text-muted-foreground">Método de Pago</p>
-              <p className="font-medium text-foreground dark:text-foreground">
-                {getMetodoPagoTexto(pedido.metodo_pago)}
-              </p>
+              <p className="font-medium text-foreground dark:text-foreground">{getMetodoPagoTexto(pedido.metodo_pago)}</p>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground dark:text-muted-foreground">Total de Productos</p>
-              <p className="font-medium text-foreground dark:text-foreground">
-                {pedido.detalles.reduce((sum, d) => sum + d.cantidad, 0)}
-              </p>
+              <p className="font-medium text-foreground dark:text-foreground">{pedido.detalles.reduce((sum, d) => sum + d.cantidad, 0)}</p>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground dark:text-muted-foreground">Total del Pedido</p>
-              <p className="text-2xl font-bold text-primary dark:text-primary">
-                ${total.toFixed(2)}
-              </p>
+              <p className="text-2xl font-bold text-primary dark:text-primary">${total.toFixed(2)}</p>
             </div>
           </div>
 
           {pedido.notas && (
             <div className="p-4 bg-secondary/20 dark:bg-secondary/30 rounded-xl">
-              <p className="text-sm font-medium text-foreground dark:text-foreground mb-1">
-                Notas del pedido:
-              </p>
+              <p className="text-sm font-medium text-foreground dark:text-foreground mb-1">Notas del pedido:</p>
               <p className="text-sm text-muted-foreground dark:text-muted-foreground">{pedido.notas}</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Columna izquierda: Productos */}
+      {/* Productos y reseñas */}
+      <div className="grid lg:grid-cols-2 gap-6">
+
         <div className="lg:col-span-2 space-y-6">
+
           {/* Productos normales */}
           {productosNormales.length > 0 && (
-            <Card className="glass rounded-3xl dark:bg-secondary/20">
+            <Card className="glass rounded-3xl dark:bg-secondary/20 relative">
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
                   <PackageIcon className="w-5 h-5" />
                   Productos
                 </h2>
+
                 <div className="space-y-4">
                   {productosNormales.map((detalle) => {
                     const precio = toNumber(detalle.precio_unitario)
                     const descuentoUnitario = toNumber(detalle.descuento_unitario)
-                    
                     return (
                       <div 
                         key={detalle.id} 
                         className="flex gap-4 p-4 bg-secondary/20 dark:bg-secondary/30 rounded-xl hover:bg-secondary/30 dark:hover:bg-secondary/40 transition-colors"
-                      >
+                      >                        
                         {detalle.producto_url_imagen ? (
                           <img
                             src={detalle.producto_url_imagen}
@@ -210,38 +267,97 @@ export default function OrderDetail({ pedido, onCancel }: OrderDetailProps) {
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h3 className="font-semibold text-foreground dark:text-foreground">
-                                {detalle.producto_nombre}
-                              </h3>
+                              <h3 className="font-semibold text-foreground dark:text-foreground">{detalle.producto_nombre}</h3>
                               {detalle.es_arrendamiento && (
                                 <p className="text-sm text-blue-600 dark:text-blue-400">Arrendamiento</p>
                               )}
                             </div>
-                            <p className="font-bold text-lg text-foreground dark:text-foreground">
-                              ${(precio * detalle.cantidad).toFixed(2)}
-                            </p>
+                            <p className="font-bold text-lg text-foreground dark:text-foreground">${(precio * detalle.cantidad).toFixed(2)}</p>
                           </div>
                           <div className="flex justify-between items-center mt-2">
                             <div>
-                              <p className="text-sm text-foreground dark:text-foreground">
-                                ${precio.toFixed(2)} c/u
-                              </p>
+                              <p className="text-sm text-foreground dark:text-foreground">${precio.toFixed(2)} c/u</p>
                               {descuentoUnitario > 0 && (
-                                <p className="text-sm text-green-600 dark:text-green-400">
-                                  Descuento: ${descuentoUnitario.toFixed(2)} c/u
-                                </p>
+                                <p className="text-sm text-green-600 dark:text-green-400">Descuento: ${descuentoUnitario.toFixed(2)} c/u</p>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground dark:text-muted-foreground">
-                              Cantidad: {detalle.cantidad}
-                            </p>
+                            <p className="text-sm text-muted-foreground dark:text-muted-foreground">Cantidad: {detalle.cantidad}</p>
                           </div>
+                          {/* Botón y panel de reseña */}
+                <div className="p-6 border-t border-secondary/30 dark:border-secondary/50">
+                  <Button
+                    onClick={() => setDialogOpen(!dialogOpen)}
+                    className="gap-2 rounded-2xl px-6 py-4 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 dark:from-cyan-700 dark:to-cyan-600 dark:hover:from-cyan-600 dark:hover:to-cyan-500 text-white shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 w-full"
+                  >
+                    <PenLineIcon className="w-5 h-5" />
+                    Escribir reseña
+                  </Button>
+
+                {dialogOpen && (
+                  <div className="mt-4 p-4 rounded-2xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm border border-cyan-200/50 dark:border-slate-700/50 transition-all duration-300">
+                    <div className="mb-4">
+                      <h3 className="text-xl font-semibold text-foreground dark:text-foreground">Escribe tu reseña</h3>
+                      <p className="text-sm text-muted-foreground dark:text-muted-foreground">Comparte tu experiencia con este producto</p>
+                    </div>
+
+                    <div className="space-y-4 pt-2">
+                      {/* Selector de estrellas */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Tu calificación</label>
+                        <div className="flex items-center gap-1">
+                          {[1,2,3,4,5].map(star => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setSelectedRating(star)}
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              className="p-1 transition-transform hover:scale-110"
+                            >
+                              <StarIcon
+                                className={`w-8 h-8 transition-colors ${
+                                  star <= (hoverRating || selectedRating)
+                                  ? "text-amber-400 fill-amber-400"
+                                  : "text-slate-300 dark:text-slate-600"
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Comentario */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Tu comentario</label>
+                        <Textarea
+                          placeholder="Cuéntanos qué te pareció el producto..."
+                          value={comentario}
+                          onChange={(e) => setComentario(e.target.value)}
+                          className="min-h-[120px] rounded-2xl resize-none border-slate-200 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-600"
+                        />
+                      </div>
+
+                      <Button
+                        onClick={() => handleSubmitReview(detalle.producto_id, idVenta)} // Aquí pasamos los ids correctos
+                        disabled={selectedRating === 0 || !comentario.trim()}
+                        className="w-full rounded-2xl py-4 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 dark:from-cyan-700 dark:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700 text-white transition-all duration-300"
+                      >
+                        Publicar reseña
+                      </Button>
+
+                    </div>
+                  </div>
+                )}
+
+              </div>
                         </div>
                       </div>
                     )
                   })}
                 </div>
               </CardContent>
+
+              
             </Card>
           )}
 
@@ -256,57 +372,103 @@ export default function OrderDetail({ pedido, onCancel }: OrderDetailProps) {
                 <div className="space-y-4">
                   {productosArrendados.map((detalle) => {
                     const precio = toNumber(detalle.precio_unitario)
-                    
                     return (
-                      <div 
-                        key={detalle.id} 
-                        className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                      >
+                      <div key={detalle.id} className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                         <div className="flex gap-4">
                           {detalle.producto_url_imagen ? (
-                            <img
-                              src={detalle.producto_url_imagen}
-                              alt={detalle.producto_nombre}
-                              className="w-20 h-20 rounded-lg object-cover"
-                            />
+                            <img src={detalle.producto_url_imagen} alt={detalle.producto_nombre} className="w-20 h-20 rounded-lg object-cover"/>
                           ) : (
                             <div className="w-20 h-20 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                               <CalendarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                             </div>
                           )}
                           <div className="flex-1">
-                            <h3 className="font-semibold text-foreground dark:text-foreground">
-                              {detalle.producto_nombre}
-                            </h3>
-                            
+                            <h3 className="font-semibold text-foreground dark:text-foreground">{detalle.producto_nombre}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                               <div>
                                 <p className="text-sm font-medium text-foreground dark:text-foreground">Periodo</p>
-                                <p className="text-sm text-muted-foreground dark:text-muted-foreground">
-                                  {detalle.periodo_arrendamiento} ({detalle.cantidad_periodos} veces)
-                                </p>
+                                <p className="text-sm text-muted-foreground dark:text-muted-foreground">{detalle.periodo_arrendamiento} ({detalle.cantidad_periodos} veces)</p>
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-foreground dark:text-foreground">Duración</p>
                                 <p className="text-sm text-muted-foreground dark:text-muted-foreground">
-                                  {detalle.fecha_inicio_arrendamiento && 
-                                   format(new Date(detalle.fecha_inicio_arrendamiento), "dd/MM/yyyy", { locale: es })} - 
-                                  {detalle.fecha_fin_arrendamiento && 
-                                   format(new Date(detalle.fecha_fin_arrendamiento), "dd/MM/yyyy", { locale: es })}
+                                  {detalle.fecha_inicio_arrendamiento && format(new Date(detalle.fecha_inicio_arrendamiento), "dd/MM/yyyy", { locale: es })} - 
+                                  {detalle.fecha_fin_arrendamiento && format(new Date(detalle.fecha_fin_arrendamiento), "dd/MM/yyyy", { locale: es })}
                                 </p>
                               </div>
                             </div>
-                            
                             <div className="flex justify-between items-center mt-3">
-                              <p className="font-bold text-blue-600 dark:text-blue-400">
-                                ${(precio * detalle.cantidad).toFixed(2)} total
-                              </p>
-                              <p className="text-sm text-muted-foreground dark:text-muted-foreground">
-                                Cantidad: {detalle.cantidad}
-                              </p>
+                              <p className="font-bold text-blue-600 dark:text-blue-400">${(precio * detalle.cantidad).toFixed(2)} total</p>
+                              <p className="text-sm text-muted-foreground dark:text-muted-foreground">Cantidad: {detalle.cantidad}</p>
                             </div>
                           </div>
                         </div>
+                          <div className="p-6 border-t border-secondary/30 dark:border-secondary/50">
+                  <Button
+                    onClick={() => setDialogOpen(!dialogOpen)}
+                    className="gap-2 rounded-2xl px-6 py-4 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 dark:from-cyan-700 dark:to-cyan-600 dark:hover:from-cyan-600 dark:hover:to-cyan-500 text-white shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 w-full"
+                  >
+                    <PenLineIcon className="w-5 h-5" />
+                    Escribir reseña
+                  </Button>
+
+                {dialogOpen && (
+                  <div className="mt-4 p-4 rounded-2xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm border border-cyan-200/50 dark:border-slate-700/50 transition-all duration-300">
+                    <div className="mb-4">
+                      <h3 className="text-xl font-semibold text-foreground dark:text-foreground">Escribe tu reseña</h3>
+                      <p className="text-sm text-muted-foreground dark:text-muted-foreground">Comparte tu experiencia con este producto</p>
+                    </div>
+
+                    <div className="space-y-4 pt-2">
+                      {/* Selector de estrellas */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Tu calificación</label>
+                        <div className="flex items-center gap-1">
+                          {[1,2,3,4,5].map(star => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setSelectedRating(star)}
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              className="p-1 transition-transform hover:scale-110"
+                            >
+                              <StarIcon
+                                className={`w-8 h-8 transition-colors ${
+                                  star <= (hoverRating || selectedRating)
+                                  ? "text-amber-400 fill-amber-400"
+                                  : "text-slate-300 dark:text-slate-600"
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Comentario */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Tu comentario</label>
+                        <Textarea
+                          placeholder="Cuéntanos qué te pareció el producto..."
+                          value={comentario}
+                          onChange={(e) => setComentario(e.target.value)}
+                          className="min-h-[120px] rounded-2xl resize-none border-slate-200 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-600"
+                        />
+                      </div>
+
+                      <Button
+                        onClick={() => handleSubmitReview(detalle.producto_id, idVenta)} // Aquí pasamos los ids correctos
+                        disabled={selectedRating === 0 || !comentario.trim()}
+                        className="w-full rounded-2xl py-4 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 dark:from-cyan-700 dark:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700 text-white transition-all duration-300"
+                      >
+                        Publicar reseña
+                      </Button>
+
+                    </div>
+                  </div>
+                )}
+
+              </div>
                       </div>
                     )
                   })}
@@ -316,143 +478,7 @@ export default function OrderDetail({ pedido, onCancel }: OrderDetailProps) {
           )}
         </div>
 
-        {/* Columna derecha: Resumen */}
-        <div className="space-y-6">
-          {/* Direcciones */}
-          <Card className="glass rounded-3xl dark:bg-secondary/20">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
-                <MapPinIcon className="w-5 h-5" />
-                Dirección de Envío
-              </h2>
-              {pedido.envio_calle ? (
-                <div className="space-y-2 text-sm">
-                  <p className="font-medium text-foreground dark:text-foreground">
-                    {pedido.envio_calle} #{pedido.envio_numero_exterior}
-                  </p>
-                  {pedido.envio_numero_interior && (
-                    <p className="text-foreground dark:text-foreground">
-                      Int. {pedido.envio_numero_interior}
-                    </p>
-                  )}
-                  {pedido.envio_colonia && (
-                    <p className="text-foreground dark:text-foreground">{pedido.envio_colonia}</p>
-                  )}
-                  <p className="text-foreground dark:text-foreground">
-                    {pedido.envio_ciudad}, {pedido.envio_estado}
-                  </p>
-                  <p className="text-foreground dark:text-foreground">
-                    CP: {pedido.envio_codigo_postal}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground dark:text-muted-foreground">
-                  No hay dirección registrada
-                </p>
-              )}
-            </CardContent>
-          </Card>
 
-          {pedido.facturacion_calle && (
-            <Card className="glass rounded-3xl dark:bg-secondary/20">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-foreground dark:text-foreground mb-4 flex items-center gap-2">
-                  <FileTextIcon className="w-5 h-5" />
-                  Dirección de Facturación
-                </h2>
-                <div className="space-y-2 text-sm">
-                  <p className="font-medium text-foreground dark:text-foreground">
-                    {pedido.facturacion_calle} #{pedido.facturacion_numero_exterior}
-                  </p>
-                  {pedido.facturacion_numero_interior && (
-                    <p className="text-foreground dark:text-foreground">
-                      Int. {pedido.facturacion_numero_interior}
-                    </p>
-                  )}
-                  {pedido.facturacion_colonia && (
-                    <p className="text-foreground dark:text-foreground">{pedido.facturacion_colonia}</p>
-                  )}
-                  <p className="text-foreground dark:text-foreground">
-                    {pedido.facturacion_ciudad}, {pedido.facturacion_estado}
-                  </p>
-                  <p className="text-foreground dark:text-foreground">
-                    CP: {pedido.facturacion_codigo_postal}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Resumen financiero */}
-          <Card className="glass rounded-3xl dark:bg-secondary/20">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-foreground dark:text-foreground mb-4">
-                Resumen del Pedido
-              </h2>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground dark:text-muted-foreground">Subtotal</span>
-                  <span className="font-medium text-foreground dark:text-foreground">
-                    ${subtotal.toFixed(2)}
-                  </span>
-                </div>
-                {descuento > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground dark:text-muted-foreground">Descuento</span>
-                    <span className="font-medium text-green-600 dark:text-green-400">
-                      -${descuento.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground dark:text-muted-foreground">Envío</span>
-                  <span className={`font-medium ${envio === 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground dark:text-foreground'}`}>
-                    {envio === 0 ? 'Gratis' : `$${envio.toFixed(2)}`}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground dark:text-muted-foreground">IVA (16%)</span>
-                  <span className="font-medium text-foreground dark:text-foreground">
-                    ${iva.toFixed(2)}
-                  </span>
-                </div>
-                <Separator className="dark:bg-border/30" />
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-foreground dark:text-foreground">Total</span>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary dark:text-primary">
-                      ${total.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-muted-foreground dark:text-muted-foreground">
-                      en MXN
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {pedido.estado_orden !== 'cancelado' && 
-               pedido.estado_orden !== 'entregado' && 
-               onCancel && (
-                <Button
-                  variant="outline"
-                  className="w-full mt-6 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800"
-                  onClick={() => onCancel(pedido.id)}
-                >
-                  Cancelar Pedido
-                </Button>
-              )}
-
-              <Link href="/pedidos" className="block mt-4">
-                <Button 
-                  variant="ghost" 
-                  className="w-full hover:bg-secondary/50 dark:hover:bg-secondary/30"
-                >
-                  Volver a Mis Pedidos
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   )

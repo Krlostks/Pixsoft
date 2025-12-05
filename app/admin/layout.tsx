@@ -220,7 +220,6 @@ export default function AdminLayout({
             <div className="flex flex-1 items-center justify-end gap-4">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-foreground">Administrador</p>
-                <p className="text-xs text-muted-foreground">admin@pixsoft.com</p>
               </div>
               
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
