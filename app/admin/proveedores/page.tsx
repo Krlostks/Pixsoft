@@ -61,14 +61,29 @@ export default function AdminProveedoresPage() {
   const [showForm, setShowForm] = useState(false)
   const [selectedProveedorId, setSelectedProveedorId] = useState<number | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [direccionesProveedor, setDireccionesProveedor] = useState<Record<number, any>>({});
+
 
   useEffect(() => {
     fetchProveedores()
   }, [])
 
   useEffect(() => {
-    //filterUsuarios()
+    filterUsuarios()
   }, [proveedores, searchTerm, roleFilter, statusFilter])
+
+  useEffect(() => {
+  if (filteredProveedores.length === 0) return;
+
+  filteredProveedores.forEach(p => {
+    console.log("paso por aqui");
+    
+    if (!direccionesProveedor[p.direccion_contacto_id!]) {
+      fetchDirecciones(p.direccion_contacto_id!);
+    }
+  });
+}, [filteredProveedores]);
+
 
   const fetchProveedores = async () => {
     try {
@@ -89,33 +104,49 @@ export default function AdminProveedoresPage() {
     }
   }
 
-  /*const filterUsuarios = () => {
-    let filtered = [...proveedores]
+const fetchDirecciones = async (idProveedor: number) => {
+  try {
+    const token = Cookies.get("token");
+    const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-    // Aplicar búsqueda
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(user => 
-        //user.first_name.toLowerCase().includes(term) ||
-        //user.last_name.toLowerCase().includes(term) ||
-        //user.email.toLowerCase().includes(term) ||
-        (user.phone && user.phone.toLowerCase().includes(term))
-      )
-    }
+    const response = await axios.get(`${baseURL}/direcciones/public/${idProveedor}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    // Aplicar filtro de rol
-    if (roleFilter !== "all") {
-      filtered = filtered.filter(user => user.role === roleFilter)
-    }
+    // 🟢 Guardar la dirección de este proveedor en el estado
+    setDireccionesProveedor(prev => ({
+      ...prev,
+      [idProveedor]: response.data
+    }));
 
-    // Aplicar filtro de estado
-    if (statusFilter !== "all") {
-      const isActive = statusFilter === "active"
-      filtered = filtered.filter(user => user.is_active === isActive)
-    }
+  } catch (error) {
+    console.error("Error obteniendo dirección:", error);
+  }
+};
 
-    setFilteredProveedores(filtered)
-  }*/
+
+  const filterUsuarios = () => {
+  let filtered = [...proveedores]
+
+  // Buscar
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase()
+    filtered = filtered.filter(p =>
+      p.nombre.toLowerCase().includes(term) ||
+      (p.email && p.email.toLowerCase().includes(term)) ||
+      (p.telefono && p.telefono.toLowerCase().includes(term))
+    )
+  }
+
+  // Estado
+  if (statusFilter !== "all") {
+    const isActive = statusFilter === "active"
+    filtered = filtered.filter(p => p.activo === isActive)
+  }
+
+  setFilteredProveedores(filtered)
+}
+
 
   const handleChangeRole = async (userId: number, newRole: string) => {
     try {
@@ -226,7 +257,7 @@ export default function AdminProveedoresPage() {
       <Card className="glass rounded-3xl overflow-hidden">
         <CardHeader className="border-b">
           <CardTitle className="text-xl font-bold text-foreground">
-            {filteredProveedores.length} Usuarios
+            {filteredProveedores.length} Proveedores
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -253,32 +284,32 @@ export default function AdminProveedoresPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProveedores.map((usuario) => (
-                    <tr key={usuario.id} className="border-b hover:bg-secondary/10 transition-colors">
+                  {filteredProveedores.map((proveedor) => (                    
+                    <tr key={proveedor.id} className="border-b hover:bg-secondary/10 transition-colors">
                       <td className="p-4">
                         <div>
                           <p className="font-medium text-foreground">
-                            {usuario.activo} {usuario.email}
+                            {proveedor.activo} {proveedor.nombre}
                           </p>
-                          <p className="text-sm text-muted-foreground">ID: {usuario.id}</p>
+                          <p className="text-sm text-muted-foreground">ID: {proveedor.id}</p>
                         </div>
                       </td>
                       <td className="p-4">
                         <div>
-                          <p className="text-foreground">{usuario.email}</p>
-                          {usuario.telefono && (
-                            <p className="text-sm text-muted-foreground">{usuario.telefono}</p>
+                          <p className="text-foreground">{proveedor.email}</p>
+                          {proveedor.telefono && (
+                            <p className="text-sm text-muted-foreground">{proveedor.telefono}</p>
                           )}
                         </div>
                       </td>
                       <td className="p-4">
                         <Badge
-                          className={`flex items-center gap-1 w-fit ${usuario.activo
+                          className={`flex items-center gap-1 w-fit ${proveedor.activo
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                             : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
                             }`}
                         >
-                          {usuario.activo ? (
+                          {proveedor.activo ? (
                             <>
                               <CheckIcon className="w-3 h-3" />
                               Activo
@@ -293,14 +324,31 @@ export default function AdminProveedoresPage() {
                       </td>
                       <td className="p-4">
                         <p className="text-sm text-muted-foreground">
-
+{proveedor.fecha_creacion ? formatDate(proveedor.fecha_creacion) : 'N/A'}
                         </p>
                       </td>
                       <td className="p-4">
-                        <p className="text-sm text-muted-foreground">
+                        {direccionesProveedor[proveedor.direccion_contacto_id] ? (
+                            <div className="text-sm text-muted-foreground">
+                            <p className="font-medium text-foreground">
+                                {direccionesProveedor[proveedor.direccion_contacto_id].alias}
+                            </p>
 
-                        </p>
-                      </td>
+                            <p>
+                                {direccionesProveedor[proveedor.direccion_contacto_id].calle}{" "}
+                                {direccionesProveedor[proveedor.direccion_contacto_id].numero_exterior}
+                            </p>
+
+                            <p>
+                                {direccionesProveedor[proveedor.direccion_contacto_id].colonia},{" "}
+                                {direccionesProveedor[proveedor.direccion_contacto_id].ciudad}
+                            </p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">Cargando...</p>
+                        )}
+                        </td>
+
                       <td className="p-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -312,7 +360,7 @@ export default function AdminProveedoresPage() {
                             <DropdownMenuItem
                               className="font-medium"
                               onClick={() => {
-                                setSelectedProveedorId(usuario.id!)
+                                setSelectedProveedorId(proveedor.id!)
                                 setIsEditing(true)
                                 setShowForm(true)
                               }}

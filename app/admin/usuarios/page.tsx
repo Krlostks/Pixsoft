@@ -13,7 +13,9 @@ import {
   CheckIcon,
   XIcon,
   MoreVerticalIcon,
-  Loader2Icon
+  Loader2Icon,
+  MailIcon,
+  SendIcon
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -33,6 +35,17 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Usuario {
   id: number
@@ -60,6 +73,13 @@ export default function AdminUsuariosPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [changingRole, setChangingRole] = useState<number | null>(null)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<Usuario | null>(null)
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailData, setEmailData] = useState({
+    subject: "",
+    content: ""
+  })
 
   const roleOptions: RoleOption[] = [
     { value: "admin", label: "Administrador", icon: ShieldIcon, color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300" },
@@ -97,7 +117,6 @@ export default function AdminUsuariosPage() {
   const filterUsuarios = () => {
     let filtered = [...usuarios]
 
-    // Aplicar búsqueda
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(user => 
@@ -108,12 +127,10 @@ export default function AdminUsuariosPage() {
       )
     }
 
-    // Aplicar filtro de rol
     if (roleFilter !== "all") {
       filtered = filtered.filter(user => user.role === roleFilter)
     }
 
-    // Aplicar filtro de estado
     if (statusFilter !== "all") {
       const isActive = statusFilter === "active"
       filtered = filtered.filter(user => user.is_active === isActive)
@@ -135,11 +152,9 @@ export default function AdminUsuariosPage() {
       )
 
       if (response.data.message) {
-        // Actualizar el usuario localmente
         setUsuarios(prev => prev.map(user => 
           user.id === userId ? { ...user, role: newRole } : user
         ))
-
         toast.success("Rol cambiado exitosamente")
       }
     } catch (error: any) {
@@ -147,6 +162,46 @@ export default function AdminUsuariosPage() {
       toast.error(error.response?.data?.message || "Error al cambiar el rol")
     } finally {
       setChangingRole(null)
+    }
+  }
+
+  const handleOpenEmailModal = (usuario: Usuario) => {
+    setSelectedUser(usuario)
+    setEmailData({
+      subject: "",
+      content: ""
+    })
+    setEmailModalOpen(true)
+  }
+
+  const handleSendEmail = async () => {
+    if (!selectedUser) return
+    
+    try {
+      setSendingEmail(true)
+      const token = Cookies.get("token")
+      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
+
+      const response = await axios.post(
+        `${baseURL}/usuarios/send-email`,
+        {
+          userId: selectedUser.id,
+          subject: emailData.subject,
+          content: emailData.content
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      if (response.data.success) {
+        toast.success("Email enviado exitosamente")
+        setEmailModalOpen(false)
+        setEmailData({ subject: "", content: "" })
+      }
+    } catch (error: any) {
+      console.error("Error sending email:", error)
+      toast.error(error.response?.data?.message || "Error al enviar el email")
+    } finally {
+      setSendingEmail(false)
     }
   }
 
@@ -331,7 +386,14 @@ export default function AdminUsuariosPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem className="font-medium">
+                            <DropdownMenuItem 
+                              className="flex items-center gap-2"
+                              onClick={() => handleOpenEmailModal(usuario)}
+                            >
+                              <MailIcon className="w-3 h-3" />
+                              Enviar Email
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="font-medium mt-2">
                               Cambiar Rol:
                             </DropdownMenuItem>
                             {roleOptions.map((role) => (
@@ -359,6 +421,81 @@ export default function AdminUsuariosPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal para enviar email */}
+      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MailIcon className="w-5 h-5" />
+              Enviar Email a Usuario
+            </DialogTitle>
+            <DialogDescription>
+              Enviar un email personalizado a {selectedUser?.first_name} {selectedUser?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Destinatario</Label>
+              <Input
+                id="recipient"
+                value={selectedUser?.email || ""}
+                readOnly
+                className="bg-secondary/50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="subject">Asunto *</Label>
+              <Input
+                id="subject"
+                placeholder="Ingrese el asunto del email"
+                value={emailData.subject}
+                onChange={(e) => setEmailData(prev => ({...prev, subject: e.target.value}))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="content">Contenido *</Label>
+              <Textarea
+                id="content"
+                placeholder="Escriba el contenido del email aquí..."
+                rows={6}
+                value={emailData.content}
+                onChange={(e) => setEmailData(prev => ({...prev, content: e.target.value}))}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEmailModalOpen(false)}
+              disabled={sendingEmail}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={!emailData.subject || !emailData.content || sendingEmail}
+              className="gap-2"
+            >
+              {sendingEmail ? (
+                <>
+                  <Loader2Icon className="w-4 h-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <SendIcon className="w-4 h-4" />
+                  Enviar Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

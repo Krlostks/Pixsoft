@@ -391,11 +391,12 @@ export default function CartPage() {
                       </div>
                     </div>
                   </div>
-
+                <Link href={'/pago'}>
                   <button className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-semibold hover:bg-primary/90 transition-all duration-300 hover:scale-[1.02] mb-4 flex items-center justify-center gap-2">
                     <SparklesIcon className="w-5 h-5" />
                     Proceder al pago
                   </button>
+                </Link>
 
                   <Link
                     href="/productos"

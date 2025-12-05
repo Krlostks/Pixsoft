@@ -69,9 +69,17 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
   const [cartTotal, setCartTotal] = useState(0)
   const [loadingCart, setLoadingCart] = useState(true)
   const [cartError, setCartError] = useState<string | null>(null)
+const [shippingRate, setShippingRate] = useState<any | null>(null);
 
   const [shippingCost, setShippingCost] = useState<number | null>(null)
   const [loadingShipping, setLoadingShipping] = useState(false)
+  const [addresses, setAddresses] = useState<any[]>([])
+const [loadingAddresses, setLoadingAddresses] = useState(true)
+const [addressesError, setAddressesError] = useState<string | null>(null)
+
+const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+
+
   const [shippingError, setShippingError] = useState<string | null>(null)
 
   // Obtener token desde cookies
@@ -117,44 +125,106 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
       setLoadingCart(false)
     }
   }
+const fetchAddresses = async () => {
+  if (!token) return
 
-  // Obtener cotización de envío
-  const fetchShipping = async () => {
-    if (!token || !addressId) return
+  try {
+    setLoadingAddresses(true)
+    setAddressesError(null)
 
-    try {
-      setLoadingShipping(true)
-      setShippingError(null)
+    const res = await axios.get("http://localhost:8080/api/direcciones", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
 
-      const res = await axios.post<ShippingResponse>(
-        "http://localhost:8080/api/envios/cotizar",
-        { direccion_id: addressId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+    setAddresses(res.data || [])
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message
 
-      const data = res.data
-
-      if (data.error) {
-        setShippingError(data.error)
-        return
-      }
-
-      setShippingCost(data.shipping_cost)
-    } catch (error: any) {
-      const msg =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message
-
-      setShippingError(msg)
-    } finally {
-      setLoadingShipping(false)
-    }
+    setAddressesError(msg)
+  } finally {
+    setLoadingAddresses(false)
   }
+}
+
+
+const fetchShipping = async (direccionId: number) => {
+  if (!token) return;
+
+  try {
+    setLoadingShipping(true);
+    setShippingError(null);
+
+    const res = await axios.post(
+      "http://localhost:8080/api/envios/cotizar",
+      { direccion_id: direccionId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("RESPUESTA COMPLETA DEL BACKEND:", res.data);
+
+    const data = res.data;
+
+    // Validación de error del backend
+    if (data.error) {
+      setShippingError(data.error);
+      return;
+    }
+
+    // El backend devuelve las tarifas dentro de "rates"
+    const rates = data.rates;
+
+    if (!rates || rates.length === 0) {
+      setShippingError("No se encontraron tarifas de envío.");
+      setShippingCost(null);
+      return;
+    }
+
+    // Filtrar tarifas válidas
+    const validRates = rates.filter((r: any) => r.success === true);
+
+    if (validRates.length === 0) {
+      setShippingError("No hay tarifas válidas.");
+      setShippingCost(null);
+      return;
+    }
+
+    // Elegir la tarifa más barata
+    const cheapest = validRates.reduce((acc: any, r: any) =>
+  Number(r.total) < Number(acc.total) ? r : acc
+);
+
+
+    console.log("Tarifa elegida:", cheapest);
+
+    // Actualizar estados
+    setShippingRate(cheapest);
+    setShippingCost(cheapest.total_pricing); 
+    setShippingCost(Number(cheapest.total)); // o Number(cheapest.amount)
+const cost = cheapest.total ? Number(cheapest.total) : null;
+setShippingCost(cost);
+
+
+  } catch (error: any) {
+    setShippingError(
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message
+    );
+  } finally {
+    setLoadingShipping(false);
+  }
+};
+
+
+
 
   // Eliminar producto del carrito
   const removeFromCart = async (id: number) => {
@@ -179,6 +249,15 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
       console.error("Error al eliminar producto:", error)
     }
   }
+useEffect(() => {
+  if (token) fetchAddresses()
+}, [token])
+
+useEffect(() => {
+  if (selectedAddressId) {
+    fetchShipping(selectedAddressId);
+  }
+}, [selectedAddressId]);
 
   // Cargar carrito cuando haya token
   useEffect(() => {
@@ -276,6 +355,32 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
                   </div>
                 ))}
               </div>
+            <div className="space-y-4">
+  {addresses.map(dir => (
+    <label
+      key={dir.id}
+      className="flex items-center gap-3 p-4 bg-secondary/40 rounded-2xl hover:bg-secondary/60 cursor-pointer"
+    >
+      <input
+        type="radio"
+        name="direccion"
+        value={dir.id}
+        checked={selectedAddressId === dir.id}
+        onChange={() => setSelectedAddressId(dir.id)}
+        className="w-5 h-5"
+      />
+
+      <div>
+        <p className="font-semibold">{dir.alias}</p>
+        <p className="text-sm text-muted-foreground">
+          {dir.calle} {dir.numero_exterior}, {dir.colonia}, {dir.ciudad}, {dir.estado}
+        </p>
+      </div>
+    </label>
+  ))}
+</div>
+
+
 
               {/* Subtotal del carrito */}
               {cart.length > 0 && (
@@ -304,9 +409,9 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
                 <div>
                   <p className="text-muted-foreground mb-4">Cotiza el envío para continuar con tu compra</p>
                   <button
-                    onClick={fetchShipping}
-                    disabled={loadingShipping || cart.length === 0 || !addressId}
-                    className="w-full px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+  onClick={() => selectedAddressId && fetchShipping(selectedAddressId)}
+  disabled={loadingShipping || cart.length === 0 || !selectedAddressId}
+
                   >
                     {loadingShipping ? (
                       <>
@@ -327,8 +432,15 @@ export default function PaymentPage({ addressId }: PaymentPageProps) {
                     <CheckCircleIcon className="w-6 h-6 text-green-500" />
                     <span className="font-semibold text-foreground">Envío cotizado exitosamente</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground ml-9">${shippingCost.toFixed(2)}</p>
-                  <p className="text-sm text-muted-foreground ml-9 mt-1">Entrega estimada: 3-5 días hábiles</p>
+                 <p className="text-2xl font-bold text-foreground ml-9">
+  ${shippingCost != null && !isNaN(shippingCost) ? shippingCost.toFixed(2) : "—"}
+</p>
+                  {shippingRate && (
+  <p className="text-sm text-muted-foreground ml-9 mt-1">
+    Entrega estimada: {shippingRate.delivery_days || shippingRate.days_in_transit || "N/D"} días
+  </p>
+)}
+
                 </div>
               )}
 
