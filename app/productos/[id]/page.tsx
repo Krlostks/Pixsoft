@@ -21,6 +21,8 @@ import {
 import type { ProductDetail, ProductDetailResponse } from "@/types/products"
 import axios from "axios"
 import { toast } from "sonner"
+import { ProductReviews } from "@/components/product-reviews"
+import { Opinion , OpinionEstadisticas, OpinionesProductoResponse } from "@/types/opiniones"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -35,6 +37,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState<"description" | "specs" | "reviews">("description")
   const [isZoomed, setIsZoomed] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [opiniones, setOpiniones] = useState<Opinion[]>([]);
+  const [estadisticas, setEstadisticas] = useState<OpinionEstadisticas | null>(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -53,7 +57,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setIsLoading(false)
       }
     }
+    
+    const fetchOpiniones = async () => {
+    try {
+      const response = await axios.get<OpinionesProductoResponse>(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/opiniones/producto/${resolvedParams.id}`
+      );
+      setOpiniones(response.data.opiniones);
+      setEstadisticas(response.data.estadisticas);
+    } catch (err) {
+      console.error("Error fetching opiniones:", err);
+      toast.error("Error al cargar las opiniones");
+    }
+  };
 
+    fetchOpiniones();
     fetchProduct()
   }, [resolvedParams.id])
 
@@ -61,8 +79,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
-    setMousePosition({ x, y })
-  }
+    setMousePosition({ x, y })}
 
   // Loading state
   if (isLoading) {
@@ -125,6 +142,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const rating = Number.parseFloat(product.promedio_calificacion) || 0
   const imagen = product.url_imagen || "/diverse-products-still-life.png"
   const stock = product.stock ?? 999
+  
 
   return (
     <div className="min-h-screen bg-background">
@@ -398,17 +416,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
 
               {/* Reviews Tab */}
-              {activeTab === "reviews" && (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-secondary/50 flex items-center justify-center">
-                    <StarIcon className="w-10 h-10 text-muted-foreground" filled={false} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Sin reseñas aún</h3>
-                  <p className="text-muted-foreground mb-6">Sé el primero en dejar una reseña de este producto.</p>
-                  <button className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-all duration-300">
-                    Escribir reseña
-                  </button>
-                </div>
+              {activeTab === "reviews" && (                
+                <ProductReviews
+                  promedioCalificacion={rating}
+                  opiniones={opiniones}
+                  estadisticas={estadisticas}
+                />
+
               )}
             </div>
           </div>
