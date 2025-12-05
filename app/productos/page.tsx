@@ -41,6 +41,7 @@ export default function ProductsPage() {
       if (filters.marca !== undefined) params.append("marca", String(filters.marca))
       if (filters.categoria !== undefined) params.append("categoria", String(filters.categoria))
       if (filters.tipo) params.append("tipo", filters.tipo)
+      if (filters.offer) params.append("offer", "true")
 
       console.log("Fetching products with params:", params.toString())
 
@@ -84,6 +85,7 @@ export default function ProductsPage() {
     const categoriaParam = params.get('categoria')
     const marcaParam = params.get('marca')
     const tipoParam = params.get('tipo')
+    const offerParam = params.get('offer')
 
     const newFilters: ProductFilters = { page: 1, limit: ITEMS_PER_PAGE }
 
@@ -95,6 +97,9 @@ export default function ProductsPage() {
     }
     if (tipoParam) {
       newFilters.tipo = tipoParam as "fisico" | "digital"
+    }
+    if (offerParam == 'true') {
+      newFilters.offer = true
     }
 
     setFilters(newFilters)
@@ -265,7 +270,7 @@ export default function ProductsPage() {
                   <h3 className="text-xl font-semibold text-foreground mb-2">No se encontraron productos</h3>
                   <p className="text-muted-foreground mb-6">Intenta ajustar los filtros para encontrar lo que buscas</p>
                   <button
-                    onClick={() => setFilters({ page: 1, limit: ITEMS_PER_PAGE })}
+                    onClick={() => {setFilters({ page: 1, limit: ITEMS_PER_PAGE }); window.history.replaceState({}, '', window.location.pathname)}}
                     className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-all duration-300"
                   >
                     Limpiar filtros

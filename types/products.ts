@@ -60,6 +60,7 @@ export interface Review {
 // Filtros de productos para enviar al backend
 export interface ProductFilters {
   marca?: number
+  offer?: boolean
   categoria?: number
   tipo?: "fisico" | "digital"
   page?: number

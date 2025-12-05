@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { ChevronDownIcon, XMarkIcon, FilterIcon } from "./icons"
 import type { ProductFilters, Categoria, Marca } from "@/types/products"
+import { Checkbox } from "./ui/checkbox"
 
 interface ProductFiltersProps {
   filters: ProductFilters
@@ -93,7 +94,9 @@ export function ProductFiltersComponent({ filters, onFiltersChange }: ProductFil
 
   const clearFilters = () => {
     onFiltersChange({ page: 1, limit: 12 })
+    window.history.replaceState({}, '', window.location.pathname)
   }
+
 
   // Cambiar a verificar por IDs (números)
   const hasActiveFilters = filters.marca !== undefined || filters.categoria !== undefined || filters.tipo !== undefined
@@ -211,6 +214,38 @@ function FilterContent({
   return (
     <div className="space-y-6">
       {/* Marca Filter - Ahora filtra por ID */}
+      <div className="border-b border-border/50 pb-4">
+        <label className="flex items-center gap-3 cursor-pointer group py-2">
+          <div
+            onClick={() => updateFilter("offer", filters.offer ? undefined : true)}
+            className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+              filters.offer
+                ? "bg-primary border-primary"
+                : "border-muted-foreground/30 group-hover:border-primary/50"
+            }`}
+          >
+            {filters.offer && (
+              <svg
+                className="w-3 h-3 text-primary-foreground"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span
+            className={`text-sm transition-colors ${
+              filters.offer ? "text-foreground font-medium" : "text-muted-foreground"
+            }`}
+            onClick={() => updateFilter("offer", filters.offer ? undefined : true)}
+          >
+            Productos en oferta
+          </span>
+        </label>
+      </div>
       <FilterSection
         title="Marca"
         isExpanded={expandedSections.includes("marca")}
