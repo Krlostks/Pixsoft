@@ -370,7 +370,7 @@ export default function CrudProveedor({
                 </div>
 
                 {/* Botones */}
-                <div className="sticky bottom-0 pt-6 pb-2 bg-background/80 backdrop-blur-sm border-t">
+                <div className="bottom-0 pt-6 pb-2 border-t">
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       type="button"
