@@ -23,6 +23,7 @@ import axios from "axios"
 import { toast } from "sonner"
 import { ProductReviews } from "@/components/product-reviews"
 import { Opinion , OpinionEstadisticas, OpinionesProductoResponse } from "@/types/opiniones"
+import Cookies from "js-cookie"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -39,6 +40,51 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [opiniones, setOpiniones] = useState<Opinion[]>([]);
   const [estadisticas, setEstadisticas] = useState<OpinionEstadisticas | null>(null);
+  const [loadingCart, setLoadingCart] = useState(false)
+  const token = Cookies.get('token')
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!token) {
+      toast.error("Debes iniciar sesión para agregar productos al carrito")
+      return
+    }
+    
+    setLoadingCart(true)
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/agregar`, 
+        {
+          producto_id: resolvedParams.id,
+          cantidad: 1,
+        },
+        { 
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        }
+      )
+      
+      if (response.data.success) {
+        toast.success("Producto agregado al carrito")
+        window.dispatchEvent(new Event('cartUpdated'))
+      }
+    } catch (error: any) {
+      console.error("Error adding to cart:", error)
+      if (error.response?.status === 401) {
+        toast.error("Sesión expirada. Por favor, inicia sesión nuevamente.")
+        Cookies.remove("token")
+        window.location.reload()
+      } else {
+        toast.error("Error al agregar producto al carrito")
+      }
+    } finally {
+      setLoadingCart(false)
+    }
+  }
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -326,6 +372,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                 <button
                   disabled={stock === 0}
+                  onClick={handleAddToCart}
                   className="w-full py-4 px-8 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:from-muted disabled:to-muted disabled:cursor-not-allowed text-primary-foreground rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-500 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <ShoppingCartIcon className="w-6 h-6" />
