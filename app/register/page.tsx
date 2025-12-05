@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import axios from "axios"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
+import { useAuth } from "@/hooks/useAuth"
+import { useRouter } from "next/navigation"
 
 type Step = "form" | "verification"
 
@@ -21,6 +23,19 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [id_usuario, setId_usuario] = useState<number | null>(null)
+  const { authenticated, admin } = useAuth()
+  const router = useRouter()
+  
+    // Redirigir si ya está autenticado
+    useEffect(() => {
+      if (authenticated) {
+        if (admin) {
+          router.push("/admin/")
+        } else {
+          router.push("/")
+        }
+      }
+    }, [authenticated, admin, router])
 
   // Form data
   const [formData, setFormData] = useState({

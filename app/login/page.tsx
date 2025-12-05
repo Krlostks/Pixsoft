@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
@@ -11,29 +10,75 @@ import { Label } from "@/components/ui/label"
 import axios from "axios"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
+import { useAuth } from "@/hooks/useAuth"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { authenticated, admin } = useAuth()
+  const router = useRouter()
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (authenticated) {
+      if (admin) {
+        router.push("/admin/")
+      } else {
+        router.push("/")
+      }
+    }
+  }, [authenticated, admin, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + "/usuarios/login", {
-        email,
-        password
-      });
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/usuarios/login",
+        {
+          email,
+          password,
+        }
+      )
       if (response.data.token) {
-        window.location.href = "/"
-        Cookies.set("token", response.data.token, { expires: 7 });
-        toast.success("Inicio de sesión exitoso. ¡Bienvenido de nuevo!");
+        // Guardar token en cookies
+        Cookies.set("token", response.data.token, { expires: 7 })
+        
+        // Decodificar token para obtener el rol
+        const token = response.data.token
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            })
+            .join('')
+        )
+        
+        const userData = JSON.parse(jsonPayload)
+        
+        toast.success("Inicio de sesión exitoso. ¡Bienvenido de nuevo!")
+        
+        // Redirigir según el rol
+        if (userData.role === 'admin') {
+          router.push("/admin")
+        } else {
+          router.push("/")
+        }
       }
     } catch (error) {
-      console.error("Error during login:", error);
-      toast.error("Ups, hubo un problema: " + (axios.isAxiosError(error) && error.response ? error.response.data : "Error"));
+      console.error("Error during login:", error)
+      toast.error(
+        "Ups, hubo un problema: " +
+          (axios.isAxiosError(error) && error.response
+            ? error.response.data
+            : "Error")
+      )
     }
     setIsLoading(false)
   }

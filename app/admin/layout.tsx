@@ -1,5 +1,6 @@
 "use client"
-
+import AdminRoute from "@/components/auth/AdminRoute"
+import { useAuth } from "@/hooks/useAuth"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -60,8 +61,10 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user } = useAuth()
 
   return (
+    <AdminRoute>
     <div className="min-h-screen bg-background">
       {/* Sidebar para desktop */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
@@ -246,5 +249,6 @@ export default function AdminLayout({
         </main>
       </div>
     </div>
+    </AdminRoute>
   )
 }
