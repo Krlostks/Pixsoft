@@ -24,6 +24,7 @@ import { toast } from "sonner"
 import { ProductReviews } from "@/components/product-reviews"
 import { Opinion , OpinionEstadisticas, OpinionesProductoResponse } from "@/types/opiniones"
 import Cookies from "js-cookie"
+import { RentalRequestModal } from "@/components/rental-request-modal"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -85,6 +86,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       setLoadingCart(false)
     }
   }
+  const [isRentalModalOpen, setIsRentalModalOpen] = useState(false)
+
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -378,6 +381,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <ShoppingCartIcon className="w-6 h-6" />
                   Agregar al Carrito
                 </button>
+                <button
+                onClick={() => setIsRentalModalOpen(true)}
+                disabled={stock === 0}
+                className="w-full py-4 px-8 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:from-muted disabled:to-muted disabled:cursor-not-allowed text-primary-foreground rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-500 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98]"
+              >                
+                Solicitar un Arrendamiento
+              </button>
+              {/* Añade el modal */}
+                <RentalRequestModal
+                  isOpen={isRentalModalOpen}
+                  onClose={() => setIsRentalModalOpen(false)}
+                  productId={product?.id || 0}
+                  productName={product?.producto_nombre || ""}
+                  productPrice={Number.parseFloat(product?.precio_descuento || product?.precio || "0")}
+                  stock={stock}
+                />
               </div>
 
               {/* Benefits Grid */}
