@@ -241,73 +241,6 @@ export default function AgregarProductoForm({
     }
   }, [urlImagen])
 
-  // Función para subir imagen
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validar tipo de archivo
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if (!validTypes.includes(file.type)) {
-      toast.error("Solo se permiten imágenes (JPEG, PNG, WebP, GIF)")
-      return
-    }
-
-    // Validar tamaño (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("La imagen no debe exceder los 5MB")
-      return
-    }
-
-    setIsUploadingImage(true)
-    try {
-      // Crear FormData
-      const formData = new FormData()
-      formData.append('imagen', file)
-
-      // Subir imagen al backend
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`, // Asegúrate de tener este endpoint
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      )
-
-      if (response.data && response.data.url) {
-        // Actualizar campo en el formulario
-        form.setValue('url_imagen', response.data.url)
-        setImagePreview(response.data.url)
-        toast.success("Imagen subida exitosamente")
-      }
-    } catch (error: any) {
-      console.error("Error al subir imagen:", error)
-      
-      // Si no hay endpoint de subida, usar una URL placeholder o base64
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64String = reader.result as string
-        form.setValue('url_imagen', base64String)
-        setImagePreview(base64String)
-        toast.success("Imagen cargada localmente")
-      }
-      reader.readAsDataURL(file)
-      
-      // toast.error(error.response?.data?.message || "Error al subir la imagen")
-    } finally {
-      setIsUploadingImage(false)
-    }
-  }
-
-  // Función para eliminar imagen
-  const handleRemoveImage = () => {
-    form.setValue('url_imagen', '')
-    setImagePreview(null)
-    toast.info("Imagen eliminada")
-  }
-
   // Función para agregar un nuevo campo de característica
   const agregarCaracteristica = () => {
     const nuevoId = caracteristicas.length > 0 
@@ -617,41 +550,6 @@ export default function AgregarProductoForm({
                     </div>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Vista previa de la imagen */}
-                      <div className="lg:col-span-1">
-                        <div className="space-y-3">
-                          <FormLabel className="font-medium">Vista Previa</FormLabel>
-                          <div className="border-2 border-dashed border-border/50 rounded-2xl p-6 bg-background/50 flex flex-col items-center justify-center min-h-[200px]">
-                            {imagePreview ? (
-                              <div className="relative w-full h-full">
-                                <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                                  <img 
-                                    src={imagePreview} 
-                                    alt="Vista previa" 
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={handleRemoveImage}
-                                  className="absolute -top-2 -right-2 rounded-full w-8 h-8"
-                                >
-                                  <TrashIcon className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="text-center">
-                                <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                                <p className="text-sm text-muted-foreground">
-                                  Sin imagen seleccionada
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Campos de imagen */}
                       <div className="lg:col-span-2 space-y-4">
@@ -669,7 +567,7 @@ export default function AgregarProductoForm({
                                     {...field}
                                   />
                                   <div className="text-sm text-muted-foreground">
-                                    Ingresa la URL de la imagen o súbela desde tu computadora
+                                    Ingresa la URL de la imagen
                                   </div>
                                 </div>
                               </FormControl>
@@ -677,59 +575,6 @@ export default function AgregarProductoForm({
                             </FormItem>
                           )}
                         />
-
-                        {/* Subir archivo */}
-                        <div className="space-y-3">
-                          <FormLabel className="font-medium">Subir Imagen</FormLabel>
-                          <div className="border-2 border-dashed border-primary/30 rounded-xl p-6 bg-primary/5 transition-all hover:bg-primary/10">
-                            <div className="text-center">
-                              <UploadIcon className="w-10 h-10 text-primary mx-auto mb-3" />
-                              <p className="text-sm text-muted-foreground mb-3">
-                                Arrastra y suelta una imagen o haz clic para seleccionar
-                              </p>
-                              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="rounded-xl gap-2"
-                                  onClick={() => document.getElementById('file-upload')?.click()}
-                                  disabled={isUploadingImage}
-                                >
-                                  {isUploadingImage ? (
-                                    <>
-                                      <Loader2Icon className="w-4 h-4 animate-spin" />
-                                      Subiendo...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <UploadIcon className="w-4 h-4" />
-                                      Seleccionar Archivo
-                                    </>
-                                  )}
-                                </Button>
-                                <input
-                                  id="file-upload"
-                                  type="file"
-                                  accept="image/jpeg,image/png,image/webp,image/gif"
-                                  className="hidden"
-                                  onChange={handleImageUpload}
-                                  disabled={isUploadingImage}
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  onClick={handleRemoveImage}
-                                  disabled={!imagePreview || isUploadingImage}
-                                >
-                                  Eliminar Imagen
-                                </Button>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-3">
-                                Formatos soportados: JPEG, PNG, WebP, GIF • Máx. 5MB
-                              </p>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>

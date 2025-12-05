@@ -17,21 +17,14 @@ import Cookies from "js-cookie"
 import axios from "axios"
 import SearchBar from "./searchBar"
 
-const categories = [
-  { name: "Promociones", href: "#" },
-  { name: "Cómputo (Hardware)", href: "#" },
-  { name: "Computadoras", href: "#" },
-  { name: "Audio y Video", href: "#" },
-  { name: "Impresión y Copiado", href: "#" },
-  { name: "Energía", href: "#" },
-  { name: "Celulares y Telefonía", href: "#" },
-  { name: "Apple", href: "#" },
-  { name: "Gaming", href: "#" },
-  { name: "Seguridad y Vigilancia", href: "#" },
-  { name: "Hogar", href: "#" },
-  { name: "Home Office", href: "#" },
-  { name: "Software y Servicios", href: "#" },
-]
+interface Category {
+  id: number
+  nombre: string
+  imagen_url: string
+  descripcion: string
+  activa: number
+  count: number
+}
 
 export function Header() {
   const { isDark, toggleTheme, mounted } = useTheme()
@@ -41,6 +34,25 @@ export function Header() {
   const [token, setToken] = useState<string | null>(null)
   const [isLoadingCart, setIsLoadingCart] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get<Category[]>(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/categorias`
+        )
+        setCategories(response.data || [])
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const fetchProfile = async () => {
     const authToken = Cookies.get("token")
@@ -309,11 +321,11 @@ export function Header() {
                   <div className="absolute top-full left-0 mt-2 w-64 glass rounded-2xl shadow-xl py-2 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                     {categories.map((category) => (
                       <Link
-                        key={category.name}
-                        href={category.href}
+                        key={category.nombre}
+                        href={`/productos?categoria=${category.id}`}
                         className="flex items-center px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 hover:text-primary transition-all duration-200"
                       >
-                        {category.name}
+                        {category.nombre}
                       </Link>
                     ))}
                   </div>
@@ -348,13 +360,13 @@ export function Header() {
             </div>
             <div className="py-2 overflow-y-auto max-h-[calc(100vh-80px)]">
               {categories.map((category) => (
-                <a
-                  key={category.name}
-                  href={category.href}
+                <Link
+                  key={category.nombre}
+                  href={`/productos?categoria=${category.id}`}
                   className="flex items-center px-4 py-3 text-foreground hover:bg-secondary/50 hover:text-primary transition-all duration-200"
                 >
-                  {category.name}
-                </a>
+                  {category.nombre}
+                </Link>
               ))}
             </div>
           </div>

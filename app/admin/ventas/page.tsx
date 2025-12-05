@@ -442,7 +442,7 @@ export default function AdminVentasPage() {
 
       {/* Gráficos */}
       {!loadingEstadisticas && estadisticas && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           <Card className="glass rounded-3xl">
             <CardHeader>
               <CardTitle className="text-xl font-bold text-foreground">
