@@ -181,7 +181,7 @@ export function Header() {
               </div>
 
               {/* Nav Links */}
-              {["Ofertas", "Lo Más Vendido", "Configurador PC", "Centro de Ayuda"].map((item) => (
+              {["Ofertas", "Lo Más Vendido", "Centro de Ayuda"].map((item) => (
                 <a
                   key={item}
                   href="#"
@@ -190,12 +190,6 @@ export function Header() {
                   {item}
                 </a>
               ))}
-
-              <div className="ml-auto flex items-center gap-4 text-sm">
-                <span className="text-muted-foreground">
-                  Total: <span className="font-semibold text-foreground">$0.00</span>
-                </span>
-              </div>
             </div>
           </div>
         </nav>
