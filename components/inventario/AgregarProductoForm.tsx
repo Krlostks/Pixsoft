@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import axios from "axios"
 import { toast } from "sonner"
-import Image from "next/image"
+import Cookies from "js-cookie"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,19 +22,26 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { ArrowLeftIcon, PlusIcon, TrashIcon } from "@/components/icons"
-import { Loader2 as Loader2Icon, ImageIcon, Upload as UploadIcon } from "lucide-react"
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { ArrowLeftIcon, PlusIcon, TrashIcon, CheckIcon } from "@/components/icons"
+import { Loader2 as Loader2Icon, ChevronsUpDown, Plus } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
-// Esquema de validación actualizado con url_imagen
+// Esquema de validación actualizado con campos de imagen para marca y categoría
 const formSchema = z.object({
   sku: z.string().min(1, "SKU es requerido"),
   nombre: z.string().min(1, "Nombre es requerido"),
@@ -50,7 +57,7 @@ const formSchema = z.object({
   duracion_maxima_arrendamiento: z.coerce.number().min(0, "Duración máxima debe ser mayor o igual a 0").optional(),
   peso_kg: z.coerce.number().min(0, "Peso debe ser mayor o igual a 0").optional(),
   dimensiones_cm: z.string().optional(),
-  url_imagen: z.string().optional(), // Nuevo campo
+  url_imagen: z.string().optional(),
   activo: z.boolean().default(true),
   destacado: z.boolean().default(false),
   stock: z.coerce.number().min(0, "Stock debe ser mayor o igual a 0"),
@@ -76,6 +83,7 @@ interface Categoria {
   id: number;
   nombre: string;
   descripcion?: string;
+  imagen_url?: string;
   activa: boolean;
 }
 
@@ -88,10 +96,10 @@ interface Marca {
 }
 
 interface AgregarProductoFormProps {
-  productId?: number; // Nuevo: para modo edición
+  productId?: number;
   onSuccess: () => void
   onCancel: () => void
-  isEditing?: boolean; // Nuevo: para saber si estamos editando
+  isEditing?: boolean;
 }
 
 export default function AgregarProductoForm({ 
@@ -104,13 +112,22 @@ export default function AgregarProductoForm({
   const [isLoadingCategorias, setIsLoadingCategorias] = useState(false)
   const [isLoadingMarcas, setIsLoadingMarcas] = useState(false)
   const [isLoadingProducto, setIsLoadingProducto] = useState(false)
+  const [isCreatingMarca, setIsCreatingMarca] = useState(false)
+  const [isCreatingCategoria, setIsCreatingCategoria] = useState(false)
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [marcas, setMarcas] = useState<Marca[]>([])
   const [caracteristicas, setCaracteristicas] = useState<Caracteristica[]>([
     { id: 1, nombre: "", valor: "" }
   ])
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [categoriaLogoUrl, setCategoriaLogoUrl] = useState("")
+  const [marcaLogoUrl, setMarcaLogoUrl] = useState("")
+  
+  // Estados para combobox
+  const [openCategoria, setOpenCategoria] = useState(false)
+  const [openMarca, setOpenMarca] = useState(false)
+  const [newCategoriaInput, setNewCategoriaInput] = useState("")
+  const [newMarcaInput, setNewMarcaInput] = useState("")
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -139,6 +156,8 @@ export default function AgregarProductoForm({
   const esArrendable = form.watch("es_arrendable")
   const tipoProducto = form.watch("tipo")
   const urlImagen = form.watch("url_imagen")
+  const categoriaValue = form.watch("categoria")
+  const marcaValue = form.watch("marca")
 
   // Cargar categorías y marcas desde el backend
   useEffect(() => {
@@ -147,9 +166,13 @@ export default function AgregarProductoForm({
         setIsLoadingCategorias(true)
         setIsLoadingMarcas(true)
 
+        const token = Cookies.get("token")
+        const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
+        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
         const [categoriasRes, marcasRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/categorias`),
-          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/marcas`)
+          axios.get(`${baseURL}/categorias`, { headers }),
+          axios.get(`${baseURL}/marcas`, { headers })
         ])
 
         setCategorias(categoriasRes.data)
@@ -172,8 +195,13 @@ export default function AgregarProductoForm({
       const fetchProducto = async () => {
         setIsLoadingProducto(true)
         try {
+          const token = Cookies.get("token")
+          const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
+          const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
           const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/productos/${productId}`
+            `${baseURL}/productos/${productId}`,
+            { headers }
           )
 
           const producto = response.data.data
@@ -241,6 +269,86 @@ export default function AgregarProductoForm({
     }
   }, [urlImagen])
 
+  // Función para crear nueva categoría
+  const crearNuevaCategoria = async () => {
+    if (!newCategoriaInput.trim()) {
+      toast.error("El nombre de la categoría es requerido")
+      return
+    }
+
+    setIsCreatingCategoria(true)
+    try {
+      const token = Cookies.get("token")
+      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
+
+      const response = await axios.post(
+        `${baseURL}/categorias`,
+        {
+          nombre: newCategoriaInput.trim(),
+          descripcion: "",
+          imagen_url: categoriaLogoUrl || "", // Usar la URL de imagen
+          activa: true
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      const nuevaCategoria = response.data.categoria
+      setCategorias([...categorias, nuevaCategoria])
+      form.setValue("categoria", nuevaCategoria.nombre)
+      setNewCategoriaInput("")
+      setCategoriaLogoUrl("") // Limpiar el campo después de crear
+      setOpenCategoria(false)
+      
+      toast.success("Categoría creada exitosamente")
+    } catch (error: any) {
+      console.error("Error al crear categoría:", error)
+      const errorMessage = error.response?.data?.error || "Error al crear la categoría"
+      toast.error(errorMessage)
+    } finally {
+      setIsCreatingCategoria(false)
+    }
+  }
+
+  // Función para crear nueva marca
+  const crearNuevaMarca = async () => {
+    if (!newMarcaInput.trim()) {
+      toast.error("El nombre de la marca es requerido")
+      return
+    }
+
+    setIsCreatingMarca(true)
+    try {
+      const token = Cookies.get("token")
+      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
+
+      const response = await axios.post(
+        `${baseURL}/marcas`,
+        {
+          nombre: newMarcaInput.trim(),
+          descripcion: "",
+          logo_url: marcaLogoUrl || "", // Usar la URL de logo
+          activa: true
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      const nuevaMarca = response.data.marca
+      setMarcas([...marcas, nuevaMarca])
+      form.setValue("marca", nuevaMarca.nombre)
+      setNewMarcaInput("")
+      setMarcaLogoUrl("") // Limpiar el campo después de crear
+      setOpenMarca(false)
+      
+      toast.success("Marca creada exitosamente")
+    } catch (error: any) {
+      console.error("Error al crear marca:", error)
+      const errorMessage = error.response?.data?.error || "Error al crear la marca"
+      toast.error(errorMessage)
+    } finally {
+      setIsCreatingMarca(false)
+    }
+  }
+
   // Función para agregar un nuevo campo de característica
   const agregarCaracteristica = () => {
     const nuevoId = caracteristicas.length > 0 
@@ -284,29 +392,31 @@ export default function AgregarProductoForm({
       // Convertir características a JSON
       const caracteristicasJSON = convertirCaracteristicasAJSON()
 
+      const token = Cookies.get("token")
+      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
+
       // Preparar los datos para enviar al backend
       const productoData = {
         ...values,
         caracteristicas: caracteristicasJSON,
-        categoria: values.categoria, // Enviar nombre para que backend busque o cree
-        marca: values.marca, // Enviar nombre para que backend busque o cree
-        // Si no es arrendable, enviar null para las duraciones
+        categoria: values.categoria,
+        marca: values.marca,
         duracion_minima_arrendamiento: values.es_arrendable ? values.duracion_minima_arrendamiento : null,
         duracion_maxima_arrendamiento: values.es_arrendable ? values.duracion_maxima_arrendamiento : null,
-        // Si no es físico, enviar null para peso y dimensiones
         peso_kg: tipoProducto === "fisico" ? values.peso_kg : null,
         dimensiones_cm: tipoProducto === "fisico" ? values.dimensiones_cm : null,
-        // Asegurar que url_imagen sea null si está vacío
         url_imagen: values.url_imagen || null,
       }
 
+      const headers = { Authorization: `Bearer ${token}` }
       let response;
       
       if (isEditing && productId) {
         // Modo edición: PUT
         response = await axios.put(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/productos/${productId}`,
-          productoData
+          `${baseURL}/productos/${productId}`,
+          productoData,
+          { headers }
         )
         
         if (response.status === 200) {
@@ -316,8 +426,9 @@ export default function AgregarProductoForm({
       } else {
         // Modo agregar: POST
         response = await axios.post(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/productos/agregar`,
-          productoData
+          `${baseURL}/productos/agregar`,
+          productoData,
+          { headers }
         )
         
         if (response.status === 201) {
@@ -348,211 +459,335 @@ export default function AgregarProductoForm({
   }
 
   return (
-    <Card className="glass rounded-3xl max-w-6xl mx-auto border-0 shadow-2xl overflow-hidden">
-      <CardHeader className="border-b bg-gradient-to-r from-background to-secondary/10 p-6">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onCancel}
-            className="h-10 w-10 rounded-xl hover:bg-secondary/50 transition-all"
-          >
-            <ArrowLeftIcon className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">
-              {isEditing ? 'Editar Producto' : 'Agregar Nuevo Producto'}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {isEditing 
-                ? 'Actualiza la información del producto' 
-                : 'Completa todos los campos para agregar un nuevo producto al inventario'}
-            </p>
-          </div>
+    <div className="container mx-auto p-4 max-w-6xl">
+      <div className="flex items-center gap-3 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCancel}
+          className="h-10 w-10 rounded-xl hover:bg-secondary/50 transition-all"
+        >
+          <ArrowLeftIcon className="w-5 h-5" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            {isEditing ? 'Editar Producto' : 'Agregar Nuevo Producto'}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isEditing 
+              ? 'Actualiza la información del producto' 
+              : 'Completa todos los campos para agregar un nuevo producto al inventario'}
+          </p>
         </div>
-      </CardHeader>
-      
-      <CardContent className="p-0">
-        <div className="h-[calc(90vh-180px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {/* Información Básica */}
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Información Básica</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="sku"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              SKU <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="SKU-001" 
-                                className="rounded-xl border-border/50 bg-background/50 h-11"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+      </div>
+
+      <Card className="glass rounded-3xl border-0 shadow-2xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="h-[calc(90vh-120px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="p-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  {/* Información Básica */}
+                  <div className="space-y-8">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 bg-primary rounded-full" />
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Información Básica</h3>
+                      </div>
                       
-                      <FormField
-                        control={form.control}
-                        name="nombre"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Nombre del Producto <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Laptop Dell XPS 13" 
-                                className="rounded-xl border-border/50 bg-background/50 h-11"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="categoria"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Categoría <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value}
-                            >
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="sku"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                SKU <span className="text-red-500">*</span>
+                              </FormLabel>
                               <FormControl>
-                                <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-11">
-                                  {isLoadingCategorias ? (
-                                    <div className="flex items-center gap-2">
-                                      <Loader2Icon className="w-4 h-4 animate-spin" />
-                                      <span>Cargando...</span>
-                                    </div>
-                                  ) : (
-                                    <SelectValue placeholder="Selecciona una categoría" />
-                                  )}
-                                </SelectTrigger>
+                                <Input 
+                                  placeholder="SKU-001" 
+                                  className="rounded-xl border-border/50 bg-background/50 h-11"
+                                  {...field} 
+                                />
                               </FormControl>
-                              <SelectContent className="rounded-xl max-h-60">
-                                {categorias.map((categoria) => (
-                                  <SelectItem 
-                                    key={categoria.id} 
-                                    value={categoria.nombre}
-                                    className="rounded-lg py-2"
-                                  >
-                                    {categoria.nombre}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="marca"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Marca <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value}
-                            >
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="nombre"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Nombre del Producto <span className="text-red-500">*</span>
+                              </FormLabel>
                               <FormControl>
-                                <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-11">
-                                  {isLoadingMarcas ? (
-                                    <div className="flex items-center gap-2">
-                                      <Loader2Icon className="w-4 h-4 animate-spin" />
-                                      <span>Cargando...</span>
-                                    </div>
-                                  ) : (
-                                    <SelectValue placeholder="Selecciona una marca" />
-                                  )}
-                                </SelectTrigger>
+                                <Input 
+                                  placeholder="Laptop Dell XPS 13" 
+                                  className="rounded-xl border-border/50 bg-background/50 h-11"
+                                  {...field} 
+                                />
                               </FormControl>
-                              <SelectContent className="rounded-xl max-h-60">
-                                {marcas.map((marca) => (
-                                  <SelectItem 
-                                    key={marca.id} 
-                                    value={marca.nombre}
-                                    className="rounded-lg py-2"
-                                  >
-                                    {marca.nombre}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="tipo"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Tipo de Producto <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-11">
-                                  <SelectValue placeholder="Selecciona un tipo" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="rounded-xl">
+                        {/* ComboBox para Categoría */}
+                        <FormField
+                          control={form.control}
+                          name="categoria"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Categoría <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <Popover open={openCategoria} onOpenChange={setOpenCategoria}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={openCategoria}
+                                      className="justify-between rounded-xl border-border/50 bg-background/50 h-11 hover:bg-background/70"
+                                    >
+                                      {isLoadingCategorias ? (
+                                        <div className="flex items-center gap-2">
+                                          <Loader2Icon className="w-4 h-4 animate-spin" />
+                                          <span>Cargando...</span>
+                                        </div>
+                                      ) : field.value ? (
+                                        categorias.find(categoria => categoria.nombre === field.value)?.nombre
+                                      ) : (
+                                        "Selecciona una categoría"
+                                      )}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0 rounded-xl" align="start">
+                                  <Command className="rounded-xl">
+                                    <CommandInput 
+                                      placeholder="Buscar categoría o crear nueva..." 
+                                      className="h-9"
+                                      value={newCategoriaInput}
+                                      onValueChange={setNewCategoriaInput}
+                                    />
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        <div className="flex flex-col gap-3 p-3">
+                                          <div className="text-sm text-muted-foreground">
+                                            No se encontró la categoría "{newCategoriaInput}"
+                                          </div>
+                                          
+                                          {/* Campo para URL de imagen de categoría */}
+                                          <div className="space-y-2">
+                                            <label className="text-sm font-medium">URL de Imagen de Categoría (Opcional)</label>
+                                            <Input
+                                              placeholder="https://ejemplo.com/imagen-categoria.jpg"
+                                              value={categoriaLogoUrl}
+                                              onChange={(e) => setCategoriaLogoUrl(e.target.value)}
+                                              className="rounded-lg h-9"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                              Ingresa la URL de la imagen para la categoría
+                                            </p>
+                                          </div>
+                                          
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={crearNuevaCategoria}
+                                            disabled={isCreatingCategoria || !newCategoriaInput.trim()}
+                                            className="justify-center gap-2"
+                                          >
+                                            {isCreatingCategoria ? (
+                                              <Loader2Icon className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                              <Plus className="w-3 h-3" />
+                                            )}
+                                            Crear categoría "{newCategoriaInput}"
+                                          </Button>
+                                        </div>
+                                      </CommandEmpty>
+                                      <CommandGroup className="max-h-60 overflow-auto">
+                                        {categorias.map((categoria) => (
+                                          <CommandItem
+                                            key={categoria.id}
+                                            value={categoria.nombre}
+                                            onSelect={() => {
+                                              form.setValue("categoria", categoria.nombre)
+                                              setOpenCategoria(false)
+                                            }}
+                                            className="rounded-lg py-2 cursor-pointer"
+                                          >
+                                            <CheckIcon
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                field.value === categoria.nombre ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            {categoria.nombre}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* ComboBox para Marca */}
+                        <FormField
+                          control={form.control}
+                          name="marca"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Marca <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <Popover open={openMarca} onOpenChange={setOpenMarca}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={openMarca}
+                                      className="justify-between rounded-xl border-border/50 bg-background/50 h-11 hover:bg-background/70"
+                                    >
+                                      {isLoadingMarcas ? (
+                                        <div className="flex items-center gap-2">
+                                          <Loader2Icon className="w-4 h-4 animate-spin" />
+                                          <span>Cargando...</span>
+                                        </div>
+                                      ) : field.value ? (
+                                        marcas.find(marca => marca.nombre === field.value)?.nombre
+                                      ) : (
+                                        "Selecciona una marca"
+                                      )}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0 rounded-xl" align="start">
+                                  <Command className="rounded-xl">
+                                    <CommandInput 
+                                      placeholder="Buscar marca o crear nueva..." 
+                                      className="h-9"
+                                      value={newMarcaInput}
+                                      onValueChange={setNewMarcaInput}
+                                    />
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        <div className="flex flex-col gap-3 p-3">
+                                          <div className="text-sm text-muted-foreground">
+                                            No se encontró la marca "{newMarcaInput}"
+                                          </div>
+                                          
+                                          {/* Campo para URL de logo de marca */}
+                                          <div className="space-y-2">
+                                            <label className="text-sm font-medium">URL de Logo de Marca (Opcional)</label>
+                                            <Input
+                                              placeholder="https://ejemplo.com/logo-marca.png"
+                                              value={marcaLogoUrl}
+                                              onChange={(e) => setMarcaLogoUrl(e.target.value)}
+                                              className="rounded-lg h-9"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                              Ingresa la URL del logo para la marca
+                                            </p>
+                                          </div>
+                                          
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={crearNuevaMarca}
+                                            disabled={isCreatingMarca || !newMarcaInput.trim()}
+                                            className="justify-center gap-2"
+                                          >
+                                            {isCreatingMarca ? (
+                                              <Loader2Icon className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                              <Plus className="w-3 h-3" />
+                                            )}
+                                            Crear marca "{newMarcaInput}"
+                                          </Button>
+                                        </div>
+                                      </CommandEmpty>
+                                      <CommandGroup className="max-h-60 overflow-auto">
+                                        {marcas.map((marca) => (
+                                          <CommandItem
+                                            key={marca.id}
+                                            value={marca.nombre}
+                                            onSelect={() => {
+                                              form.setValue("marca", marca.nombre)
+                                              setOpenMarca(false)
+                                            }}
+                                            className="rounded-lg py-2 cursor-pointer"
+                                          >
+                                            <CheckIcon
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                field.value === marca.nombre ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            {marca.nombre}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="tipo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Tipo de Producto <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <div className="grid grid-cols-2 gap-2">
                                 {tiposProducto.map((tipo) => (
-                                  <SelectItem key={tipo.value} value={tipo.value} className="rounded-lg py-2">
+                                  <Button
+                                    key={tipo.value}
+                                    type="button"
+                                    variant={field.value === tipo.value ? "default" : "outline"}
+                                    onClick={() => field.onChange(tipo.value)}
+                                    className="rounded-xl h-11"
+                                  >
                                     {tipo.label}
-                                  </SelectItem>
+                                  </Button>
                                 ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <Separator className="bg-border/30" />
+                    <Separator className="bg-border/30" />
 
-                  {/* Imagen del Producto */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Imagen del Producto</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                      {/* Campos de imagen */}
-                      <div className="lg:col-span-2 space-y-4">
+                    {/* Imagen del Producto */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 bg-primary rounded-full" />
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Imagen del Producto</h3>
+                      </div>
+                      
+                      <div className="space-y-4">
                         <FormField
                           control={form.control}
                           name="url_imagen"
@@ -560,15 +795,222 @@ export default function AgregarProductoForm({
                             <FormItem>
                               <FormLabel className="font-medium">URL de la Imagen</FormLabel>
                               <FormControl>
-                                <div className="space-y-3">
+                                <Input
+                                  placeholder="https://ejemplo.com/imagen-producto.jpg"
+                                  className="rounded-xl border-border/50 bg-background/50"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription className="text-xs mt-1">
+                                Ingresa la URL de la imagen del producto
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {imagePreview && (
+                          <div className="mt-4">
+                            <p className="text-sm font-medium mb-2">Vista previa:</p>
+                            <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+                              <img
+                                src={imagePreview}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                                onError={() => setImagePreview(null)}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Separator className="bg-border/30" />
+
+                    {/* Descripción */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 bg-primary rounded-full" />
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Descripción</h3>
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="descripcion"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-medium flex items-center gap-1">
+                              Descripción <span className="text-red-500">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Describe las características principales, beneficios y especificaciones del producto..."
+                                className="min-h-[120px] rounded-xl border-border/50 bg-background/50 resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Separator className="bg-border/30" />
+
+                    {/* Características Dinámicas */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1 w-3 bg-primary rounded-full" />
+                          <h3 className="text-lg md:text-xl font-semibold text-foreground">Características</h3>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={agregarCaracteristica}
+                          className="rounded-xl gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                          Agregar
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {caracteristicas.map((caracteristica, index) => (
+                          <div 
+                            key={caracteristica.id} 
+                            className="flex flex-col sm:flex-row items-start gap-3 p-4 bg-secondary/10 rounded-xl border border-border/30"
+                          >
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                  Nombre {index === 0 && <span className="text-red-500">*</span>}
+                                </label>
+                                <Input
+                                  placeholder="Ej: Color, Tamaño, Material"
+                                  value={caracteristica.nombre}
+                                  onChange={(e) => actualizarCaracteristica(caracteristica.id, 'nombre', e.target.value)}
+                                  className="rounded-lg border-border/50 bg-background h-10"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                  Valor {index === 0 && <span className="text-red-500">*</span>}
+                                </label>
+                                <Input
+                                  placeholder="Ej: Negro, Grande, Algodón"
+                                  value={caracteristica.valor}
+                                  onChange={(e) => actualizarCaracteristica(caracteristica.id, 'valor', e.target.value)}
+                                  className="rounded-lg border-border/50 bg-background h-10"
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => eliminarCaracteristica(caracteristica.id)}
+                              className="h-10 w-10 rounded-lg mt-2 sm:mt-6 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
+                              disabled={caracteristicas.length === 1 && !caracteristica.nombre && !caracteristica.valor}
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">
+                        Las características se convertirán automáticamente a formato JSON al guardar
+                      </p>
+                    </div>
+
+                    <Separator className="bg-border/30" />
+
+                    {/* Precios y Costos */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 bg-primary rounded-full" />
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Precios y Costos</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="precio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Precio de Venta <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                    $
+                                  </span>
                                   <Input
-                                    placeholder="https://ejemplo.com/imagen.jpg"
-                                    className="rounded-xl border-border/50 bg-background/50"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="pl-8 rounded-xl border-border/50 bg-background/50 h-11"
+                                    placeholder="0.00"
                                     {...field}
                                   />
-                                  <div className="text-sm text-muted-foreground">
-                                    Ingresa la URL de la imagen
-                                  </div>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="precio_descuento"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-medium">Precio con Descuento</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                    $
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="pl-8 rounded-xl border-border/50 bg-background/50 h-11"
+                                    placeholder="0.00"
+                                    value={field.value || 0}
+                                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="costo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Costo <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                    $
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="pl-8 rounded-xl border-border/50 bg-background/50 h-11"
+                                    placeholder="0.00"
+                                    {...field}
+                                  />
                                 </div>
                               </FormControl>
                               <FormMessage />
@@ -577,480 +1019,285 @@ export default function AgregarProductoForm({
                         />
                       </div>
                     </div>
-                  </div>
 
-                  <Separator className="bg-border/30" />
+                    <Separator className="bg-border/30" />
 
-                  {/* Descripción */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Descripción</h3>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="descripcion"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-medium flex items-center gap-1">
-                            Descripción <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe las características principales, beneficios y especificaciones del producto..."
-                              className="min-h-[120px] rounded-xl border-border/50 bg-background/50 resize-none"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <Separator className="bg-border/30" />
-
-                  {/* Características Dinámicas */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    {/* Stock e Inventario */}
+                    <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <div className="h-1 w-3 bg-primary rounded-full" />
-                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Características</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Stock e Inventario</h3>
                       </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="stock"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="font-medium flex items-center gap-1">
+                                Stock <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  className="rounded-xl border-border/50 bg-background/50 h-11"
+                                  placeholder="0"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {tipoProducto === "fisico" && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name="peso_kg"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-medium">Peso (kg)</FormLabel>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        className="pr-10 rounded-xl border-border/50 bg-background/50 h-11"
+                                        placeholder="0.00"
+                                        value={field.value || 0}
+                                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                      />
+                                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                        kg
+                                      </span>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="dimensiones_cm"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-medium">Dimensiones (cm)</FormLabel>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input
+                                        placeholder="30x20x15"
+                                        className="pr-10 rounded-xl border-border/50 bg-background/50 h-11"
+                                        {...field}
+                                      />
+                                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                        cm
+                                      </span>
+                                    </div>
+                                  </FormControl>
+                                  <FormDescription className="text-xs mt-1">
+                                    Formato: largo x ancho x alto
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <Separator className="bg-border/30" />
+
+                    {/* Arrendamiento (Opcional) */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 bg-primary rounded-full" />
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Arrendamiento</h3>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="es_arrendable"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 bg-secondary/10 border-border/30">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base font-medium">
+                                  ¿Es arrendable?
+                                </FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  Permitir que este producto sea arrendado
+                                </p>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="data-[state=checked]:bg-primary h-6 w-11"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        {esArrendable && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 ml-0 sm:ml-4 p-4 border rounded-xl bg-secondary/5 border-border/20">
+                            <FormField
+                              control={form.control}
+                              name="duracion_minima_arrendamiento"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-medium">Duración Mínima (días)</FormLabel>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        className="pr-10 rounded-xl border-border/50 bg-background/50 h-10"
+                                        placeholder="0"
+                                        value={field.value || 0}
+                                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                      />
+                                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                        días
+                                      </span>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="duracion_maxima_arrendamiento"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-medium">Duración Máxima (días)</FormLabel>
+                                  <FormControl>
+                                    <div className="relative">
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        className="pr-10 rounded-xl border-border/50 bg-background/50 h-10"
+                                        placeholder="0"
+                                        value={field.value || 0}
+                                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                      />
+                                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                                        días
+                                      </span>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Separator className="bg-border/30" />
+
+                    {/* Estado y Configuración */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 bg-primary rounded-full" />
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground">Estado y Configuración</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="activo"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 bg-secondary/10 border-border/30">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base font-medium">
+                                  Producto Activo
+                                </FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  El producto será visible para los clientes
+                                </p>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="data-[state=checked]:bg-primary h-6 w-11"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="destacado"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 bg-secondary/10 border-border/30">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base font-medium">
+                                  Producto Destacado
+                                </FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  Aparecerá en secciones especiales
+                                </p>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="data-[state=checked]:bg-primary h-6 w-11"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="sticky bottom-0 pt-6 pb-2 bg-background/80 backdrop-blur-sm border-t">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        onClick={agregarCaracteristica}
-                        className="rounded-xl gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
+                        onClick={onCancel}
+                        className="flex-1 rounded-xl h-12 font-medium border-border/50 hover:bg-secondary/50 transition-all"
+                        disabled={isSubmitting}
                       >
-                        <PlusIcon className="w-4 h-4" />
-                        Agregar
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1 rounded-xl h-12 font-medium bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                        disabled={isSubmitting || isLoadingProducto || isCreatingMarca || isCreatingCategoria}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                            {isEditing ? 'Guardando...' : 'Agregando...'}
+                          </>
+                        ) : (
+                          isEditing ? 'Guardar Cambios' : 'Agregar Producto'
+                        )}
                       </Button>
                     </div>
-                    
-                    <div className="space-y-3">
-                      {caracteristicas.map((caracteristica, index) => (
-                        <div 
-                          key={caracteristica.id} 
-                          className="flex flex-col sm:flex-row items-start gap-3 p-4 bg-secondary/10 rounded-xl border border-border/30"
-                        >
-                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">
-                                Nombre {index === 0 && <span className="text-red-500">*</span>}
-                              </label>
-                              <Input
-                                placeholder="Ej: Color, Tamaño, Material"
-                                value={caracteristica.nombre}
-                                onChange={(e) => actualizarCaracteristica(caracteristica.id, 'nombre', e.target.value)}
-                                className="rounded-lg border-border/50 bg-background h-10"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">
-                                Valor {index === 0 && <span className="text-red-500">*</span>}
-                              </label>
-                              <Input
-                                placeholder="Ej: Negro, Grande, Algodón"
-                                value={caracteristica.valor}
-                                onChange={(e) => actualizarCaracteristica(caracteristica.id, 'valor', e.target.value)}
-                                className="rounded-lg border-border/50 bg-background h-10"
-                              />
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => eliminarCaracteristica(caracteristica.id)}
-                            className="h-10 w-10 rounded-lg mt-2 sm:mt-6 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
-                            disabled={caracteristicas.length === 1 && !caracteristica.nombre && !caracteristica.valor}
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground">
-                      Las características se convertirán automáticamente a formato JSON al guardar
-                    </p>
                   </div>
-
-                  <Separator className="bg-border/30" />
-
-                  {/* Precios y Costos */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Precios y Costos</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="precio"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Precio de Venta <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                  $
-                                </span>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  className="pl-8 rounded-xl border-border/50 bg-background/50 h-11"
-                                  placeholder="0.00"
-                                  {...field}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="precio_descuento"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium">Precio con Descuento</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                  $
-                                </span>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  className="pl-8 rounded-xl border-border/50 bg-background/50 h-11"
-                                  placeholder="0.00"
-                                  value={field.value || 0}
-                                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="costo"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Costo <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                  $
-                                </span>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  className="pl-8 rounded-xl border-border/50 bg-background/50 h-11"
-                                  placeholder="0.00"
-                                  {...field}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <Separator className="bg-border/30" />
-
-                  {/* Stock e Inventario */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Stock e Inventario</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="stock"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-medium flex items-center gap-1">
-                              Stock <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                className="rounded-xl border-border/50 bg-background/50 h-11"
-                                placeholder="0"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {tipoProducto === "fisico" && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="peso_kg"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium">Peso (kg)</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      min="0"
-                                      className="pr-10 rounded-xl border-border/50 bg-background/50 h-11"
-                                      placeholder="0.00"
-                                      value={field.value || 0}
-                                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                                    />
-                                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                      kg
-                                    </span>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="dimensiones_cm"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium">Dimensiones (cm)</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Input
-                                      placeholder="30x20x15"
-                                      className="pr-10 rounded-xl border-border/50 bg-background/50 h-11"
-                                      {...field}
-                                    />
-                                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                      cm
-                                    </span>
-                                  </div>
-                                </FormControl>
-                                <FormDescription className="text-xs mt-1">
-                                  Formato: largo x ancho x alto
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator className="bg-border/30" />
-
-                  {/* Arrendamiento (Opcional) */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Arrendamiento</h3>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="es_arrendable"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 bg-secondary/10 border-border/30">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base font-medium">
-                                ¿Es arrendable?
-                              </FormLabel>
-                              <p className="text-sm text-muted-foreground">
-                                Permitir que este producto sea arrendado
-                              </p>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="data-[state=checked]:bg-primary h-6 w-11"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      {esArrendable && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 ml-0 sm:ml-4 p-4 border rounded-xl bg-secondary/5 border-border/20">
-                          <FormField
-                            control={form.control}
-                            name="duracion_minima_arrendamiento"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium">Duración Mínima (días)</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="pr-10 rounded-xl border-border/50 bg-background/50 h-10"
-                                      placeholder="0"
-                                      value={field.value || 0}
-                                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                                    />
-                                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                      días
-                                    </span>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="duracion_maxima_arrendamiento"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium">Duración Máxima (días)</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="pr-10 rounded-xl border-border/50 bg-background/50 h-10"
-                                      placeholder="0"
-                                      value={field.value || 0}
-                                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                                    />
-                                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                                      días
-                                    </span>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator className="bg-border/30" />
-
-                  {/* Estado y Configuración */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-3 bg-primary rounded-full" />
-                      <h3 className="text-lg md:text-xl font-semibold text-foreground">Estado y Configuración</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="activo"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 bg-secondary/10 border-border/30">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base font-medium">
-                                Producto Activo
-                              </FormLabel>
-                              <p className="text-sm text-muted-foreground">
-                                El producto será visible para los clientes
-                              </p>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="data-[state=checked]:bg-primary h-6 w-11"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="destacado"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-xl border p-4 bg-secondary/10 border-border/30">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base font-medium">
-                                Producto Destacado
-                              </FormLabel>
-                              <p className="text-sm text-muted-foreground">
-                                Aparecerá en secciones especiales
-                              </p>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="data-[state=checked]:bg-primary h-6 w-11"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botones */}
-                <div className="sticky bottom-0 pt-6 pb-2 bg-background/80 backdrop-blur-sm border-t">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={onCancel}
-                      className="flex-1 rounded-xl h-12 font-medium border-border/50 hover:bg-secondary/50 transition-all"
-                      disabled={isSubmitting || isUploadingImage}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 rounded-xl h-12 font-medium bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-                      disabled={isSubmitting || isLoadingProducto || isUploadingImage}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
-                          {isEditing ? 'Guardando...' : 'Agregando...'}
-                        </>
-                      ) : (
-                        isEditing ? 'Guardar Cambios' : 'Agregar Producto'
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </Form>
+                </form>
+              </Form>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
