@@ -396,6 +396,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   productName={product?.producto_nombre || ""}
                   productPrice={Number.parseFloat(product?.precio_descuento || product?.precio || "0")}
                   stock={stock}
+                  descuento = {
+                    (() => {
+                      const precio = Number.parseFloat(product?.precio || "0");
+                      const precioDescuento = Number.parseFloat(product?.precio_descuento || "0");
+                      
+                      // Si hay precio de descuento válido (mayor que 0 y menor que precio normal)
+                      if (precioDescuento > 0 && precioDescuento < precio) {
+                        return precio - precioDescuento;
+                      }
+                      return 0;
+                    })()
+                  }
                 />
               </div>
 

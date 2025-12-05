@@ -12,6 +12,7 @@ interface RentalRequestModalProps {
   productName: string;
   productPrice: number;
   stock: number;
+  descuento?: number;
 }
 
 export function RentalRequestModal({ 
@@ -20,7 +21,8 @@ export function RentalRequestModal({
   productId, 
   productName, 
   productPrice,
-  stock 
+  stock ,
+  descuento = 0
 }: RentalRequestModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export function RentalRequestModal({
     // Cantidad y precios
     cantidad: 1,
     precio_unitario: productPrice || 0,
-    descuento_unitario: 0,
+    descuento_unitario:descuento || 0,
     
     // Arrendamiento
     es_arrendamiento: true,
@@ -329,7 +331,7 @@ export function RentalRequestModal({
               {/* Descuento */}
               <div>
                 <label className="text-sm font-medium text-foreground block mb-2">
-                  Descuento por Unidad (Opcional)
+                  Descuento por Unidad
                 </label>
                 <input
                   type="number"
@@ -338,6 +340,7 @@ export function RentalRequestModal({
                   min="0"
                   value={formData.descuento_unitario}
                   onChange={handleInputChange}
+                  disabled = {true} 
                   className="w-full px-4 py-2 rounded-xl border border-border bg-background text-foreground"
                 />
               </div>
@@ -363,7 +366,6 @@ export function RentalRequestModal({
                       <option value="diario">Diario</option>
                       <option value="semanal">Semanal</option>
                       <option value="mensual">Mensual</option>
-                      <option value="anual">Anual</option>
                     </select>
                   </div>
                   <div>
@@ -374,6 +376,7 @@ export function RentalRequestModal({
                       type="number"
                       name="cantidad_periodos"
                       min="1"
+                      max="12"
                       value={formData.cantidad_periodos}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 rounded-xl border border-border bg-background text-foreground"
