@@ -209,7 +209,7 @@ export function Header() {
                       Perfil
                     </Link>
                     <Link
-                      href="/ordenes"
+                      href="/pedidos"
                       className="block px-4 py-2 hover:bg-secondary/50"
                     >
                       Mis órdenes
