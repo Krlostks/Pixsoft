@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { XIcon } from 'lucide-react'
 import axios from 'axios'
 import { ProductListItem } from '@/types/products'
+import Link from 'next/link'
 
 interface SearchResultsProps {
   query: string
@@ -71,7 +72,7 @@ export default function SearchResults({
         ) : (
           <div className="divide-y divide-border/50">
             {products.map((product) => (
-              <a 
+              <Link
                 key={product.id}
                 href={`/productos/${product.id}`}
                 className="p-4 hover:bg-muted transition-colors flex gap-4 items-center group"
@@ -101,7 +102,7 @@ export default function SearchResults({
                     )}
                   </div>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}

@@ -5,6 +5,7 @@ import "./globals.css"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import { Toaster } from "sonner"
+import { ChatFloating } from "@/components/chatFloating"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,6 +29,7 @@ export default function RootLayout({
           {children}
         <Footer />
         <Toaster position="top-right" richColors />
+        <ChatFloating />
       </body>
     </html>
   )
