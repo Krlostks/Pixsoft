@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
 import Cookies from "js-cookie"
-import { 
+import {
   UsersIcon,
   SearchIcon,
   FilterIcon,
@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import CrudProveedor from "@/components/proveedores/CrudProveedor"
+
 
 export interface Proveedores {
   id?: number; // Opcional al crear un nuevo proveedor, se asigna automáticamente
@@ -56,6 +58,9 @@ export default function AdminProveedoresPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [changingRole, setChangingRole] = useState<number | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [selectedProveedorId, setSelectedProveedorId] = useState<number | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     fetchProveedores()
@@ -70,11 +75,11 @@ export default function AdminProveedoresPage() {
       setLoading(true)
       const token = Cookies.get("token")
       const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL
-      
+
       const response = await axios.get(`${baseURL}/proveedores`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      
+
       setProveedores(response.data)
     } catch (error) {
       console.error("Error fetching users:", error)
@@ -126,7 +131,7 @@ export default function AdminProveedoresPage() {
 
       if (response.data.message) {
         // Actualizar el usuario localmente
-        setProveedores(prev => prev.map(user => 
+        setProveedores(prev => prev.map(user =>
           user.id === userId ? { ...user, role: newRole } : user
         ))
 
@@ -179,9 +184,9 @@ export default function AdminProveedoresPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div className="flex gap-4">
-              
+
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-36 rounded-xl">
@@ -194,17 +199,21 @@ export default function AdminProveedoresPage() {
                 </SelectContent>
               </Select>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="rounded-xl"
                 onClick={fetchProveedores}
               >
                 Actualizar
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="rounded-xl"
-                onClick={fetchProveedores}
+                onClick={() => {
+                  setSelectedProveedorId(null)
+                  setIsEditing(false)
+                  setShowForm(true)
+                }}
               >
                 Agregar nuevo
               </Button>
@@ -263,12 +272,11 @@ export default function AdminProveedoresPage() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <Badge 
-                          className={`flex items-center gap-1 w-fit ${
-                            usuario.activo 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                          }`}
+                        <Badge
+                          className={`flex items-center gap-1 w-fit ${usuario.activo
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                            }`}
                         >
                           {usuario.activo ? (
                             <>
@@ -285,12 +293,12 @@ export default function AdminProveedoresPage() {
                       </td>
                       <td className="p-4">
                         <p className="text-sm text-muted-foreground">
-                          
+
                         </p>
                       </td>
                       <td className="p-4">
                         <p className="text-sm text-muted-foreground">
-                          
+
                         </p>
                       </td>
                       <td className="p-4">
@@ -301,7 +309,14 @@ export default function AdminProveedoresPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem className="font-medium">
+                            <DropdownMenuItem
+                              className="font-medium"
+                              onClick={() => {
+                                setSelectedProveedorId(usuario.id!)
+                                setIsEditing(true)
+                                setShowForm(true)
+                              }}
+                            >
                               Editar
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -315,7 +330,21 @@ export default function AdminProveedoresPage() {
           )}
         </CardContent>
       </Card>
-      
+
+      {showForm && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <CrudProveedor
+            proveedorId={selectedProveedorId || undefined}
+            isEditing={isEditing}
+            onSuccess={() => {
+              setShowForm(false)
+              fetchProveedores() // Recargar la lista
+            }}
+            onCancel={() => setShowForm(false)}
+          />
+        </div>
+      )}
+
     </div>
   )
 }
