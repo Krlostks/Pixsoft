@@ -15,6 +15,7 @@ import {
 import Link from "next/link"
 import Cookies from "js-cookie"
 import axios from "axios"
+import SearchBar from "./searchBar"
 
 const categories = [
   { name: "Promociones", href: "#" },
@@ -133,16 +134,7 @@ export function Header() {
 
             {/* Search Bar */}
             <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-              <div className="relative w-full group">
-                <input
-                  type="text"
-                  placeholder="¿Qué producto buscas hoy?"
-                  className="w-full h-12 pl-5 pr-14 rounded-2xl bg-secondary/50 dark:bg-secondary/30 border border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300 text-foreground placeholder:text-muted-foreground"
-                />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-xl bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105">
-                  <SearchIcon className="w-5 h-5 text-primary-foreground" />
-                </button>
-              </div>
+              <SearchBar />
             </div>
 
             {/* Actions */}
@@ -255,16 +247,7 @@ export function Header() {
 
           {/* Mobile Search */}
           <div className="md:hidden pb-4">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                className="w-full h-11 pl-4 pr-12 rounded-xl bg-secondary/50 dark:bg-secondary/30 border border-border/50 focus:border-primary outline-none transition-all duration-300 text-foreground text-sm"
-              />
-              <button className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-primary">
-                <SearchIcon className="w-4 h-4 text-primary-foreground" />
-              </button>
-            </div>
+            <SearchBar />
           </div>
         </div>
 
