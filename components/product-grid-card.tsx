@@ -16,6 +16,10 @@ export function ProductGridCard({ product }: { product: ProductListItem }) {
   const [loadingCart, setLoadingCart] = useState(false);
 
   const handleAddToCart = async () => {
+    if (!token) {
+      toast.error("Debes iniciar sesión para agregar productos al carrito");
+      return;
+    }
     setLoadingCart(true);
     try {
       const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/agregar`, {

@@ -47,7 +47,7 @@ useEffect(() => {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-sm">
       {/* Promo Banner */}
-      <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
+      <div className="bg-linear-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
         <p className="animate-pulse">
           <span className="font-semibold">Envío GRATIS</span> en compras mayores a $999 | Hasta 18 MSI
         </p>
@@ -145,7 +145,7 @@ useEffect(() => {
             </button>
 
             
-            <div className="absolute right-0 mt-0.5 w-48 bg-card rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all">
+            <div className="absolute right-0 mt-0 w-48 bg-card rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all">
               <Link
                 href="/cuenta"
                 className="block px-4 py-2 hover:bg-secondary/50 rounded-t-xl"
@@ -169,7 +169,7 @@ useEffect(() => {
               <button
                 className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-600"
                 onClick={() => {
-                  localStorage.removeItem("token");
+                  Cookies.remove("token");
                   window.location.reload();
                 }}
               >
