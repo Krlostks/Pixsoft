@@ -414,8 +414,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   )
 }

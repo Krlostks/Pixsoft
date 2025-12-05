@@ -285,15 +285,12 @@ export function Header() {
               </div>
 
               {/* Nav Links */}
-              {["Ofertas", "Lo Más Vendido", "Centro de Ayuda"].map((item) => (
-                <a
-                  key={item}
-                  href="#"
+                <Link
+                  href="/productos?offer=true"
                   className="px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-secondary/50 hover:text-primary transition-all duration-300"
                 >
-                  {item}
-                </a>
-              ))}
+                  Ofertas
+                </Link>
             </div>
           </div>
         </nav>

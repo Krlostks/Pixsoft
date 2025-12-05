@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react"
 import axios from "axios"
+import Link from "next/link"
 
 interface Category {
+  id: number
   nombre: string
   imagen_url: string
   descripcion: string
@@ -96,9 +98,9 @@ export function CategoriesSection() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
           {categoriesWithGradient.map((category) => (
-            <a
+            <Link
               key={category.nombre}
-              href="#"
+              href={`/productos?categoria=${category.id}`}
               className="group relative overflow-hidden rounded-3xl aspect-square bg-card border border-border/60 hover:shadow-2xl transition-all duration-500 hover:scale-105"
             >
               {/* Background Gradient */}
@@ -138,7 +140,7 @@ export function CategoriesSection() {
                   {category.nombre}
                 </h3>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
