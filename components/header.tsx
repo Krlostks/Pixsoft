@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { useTheme } from "@/hooks/use-theme"
 import {
   SunIcon,
@@ -40,6 +40,34 @@ export function Header() {
   const [cartCount, setCartCount] = useState(0)
   const [token, setToken] = useState<string | null>(null)
   const [isLoadingCart, setIsLoadingCart] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  const fetchProfile = async () => {
+    const authToken = Cookies.get("token")
+    if (!authToken) return
+    
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/usuarios/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      )
+      if (response.data.data) {
+        setIsAdmin(response.data.data.role == 'admin')
+      }
+      return response.data.user
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+      return null
+    }
+  }
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
 
   // Función para obtener el conteo del carrito
   const fetchCartCount = async (authToken: string) => {
@@ -202,6 +230,14 @@ export function Header() {
                   </button>
 
                   <div className="absolute right-0 mt-0 w-48 bg-card rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50">
+                    {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="block px-4 py-2 hover:bg-secondary/50 rounded-t-xl"
+                    >
+                      Admin
+                    </Link>
+                    )}
                     <Link
                       href="/cuenta"
                       className="block px-4 py-2 hover:bg-secondary/50 rounded-t-xl"
