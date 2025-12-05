@@ -3,11 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  BarChart3Icon, 
-  ShoppingBagIcon, 
-  PackageIcon, 
-  UsersIcon, 
+import {
+  BarChart3Icon,
+  ShoppingBagIcon,
+  PackageIcon,
+  UsersIcon,
   CalendarIcon,
   SettingsIcon,
   MenuIcon,
@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import Cookies from 'js-cookie';
 
 const navItems = [
   {
@@ -44,12 +45,7 @@ const navItems = [
     href: "/admin/arrendamientos",
     label: "Arrendamientos",
     icon: CalendarIcon,
-  },
-  {
-    href: "/admin/configuracion",
-    label: "Configuración",
-    icon: SettingsIcon,
-  },
+  }
 ]
 
 export default function AdminLayout({
@@ -82,9 +78,9 @@ export default function AdminLayout({
           <nav className="flex flex-1 flex-col">
             <ul className="space-y-1">
               {navItems.map((item) => {
-                const isActive = pathname === item.href || 
+                const isActive = pathname === item.href ||
                   (item.href !== "/admin" && pathname?.startsWith(item.href))
-                
+
                 return (
                   <li key={item.href}>
                     <Link
@@ -106,7 +102,7 @@ export default function AdminLayout({
 
             <div className="mt-auto pt-8">
               <Separator className="mb-6" />
-              
+
               <Link
                 href="/"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-foreground hover:bg-secondary/50 transition-all duration-300 mb-3"
@@ -118,6 +114,10 @@ export default function AdminLayout({
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 rounded-2xl hover:bg-red-50 hover:text-red-600 border-red-200"
+                onClick={() => {
+                  Cookies.remove("token");
+                  window.location.href = '/';
+                }}
               >
                 <LogOutIcon className="w-5 h-5" />
                 <span>Cerrar Sesión</span>
@@ -130,7 +130,7 @@ export default function AdminLayout({
       {/* Mobile sidebar */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div 
+          <div
             className="fixed inset-0 bg-black/30 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
@@ -159,9 +159,9 @@ export default function AdminLayout({
 
             <nav className="space-y-1">
               {navItems.map((item) => {
-                const isActive = pathname === item.href || 
+                const isActive = pathname === item.href ||
                   (item.href !== "/admin" && pathname?.startsWith(item.href))
-                
+
                 return (
                   <Link
                     key={item.href}
@@ -194,6 +194,10 @@ export default function AdminLayout({
               <Button
                 variant="outline"
                 className="w-full justify-start gap-3 rounded-2xl hover:bg-red-50 hover:text-red-600 border-red-200"
+                onClick={() => {
+                  Cookies.remove("token");
+                  window.location.href = '/';
+                }}
               >
                 <LogOutIcon className="w-5 h-5" />
                 <span>Cerrar Sesión</span>
@@ -221,7 +225,7 @@ export default function AdminLayout({
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-foreground">Administrador</p>
               </div>
-              
+
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <span className="text-primary font-bold">A</span>
               </div>
