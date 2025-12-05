@@ -2,6 +2,9 @@
 
 import { useState } from "react"
 import { HeartIcon, ShoppingCartIcon, StarIcon } from "./icons"
+import axios from "axios"
+import { toast } from "sonner"
+import Cookies from "js-cookie"
 
 interface Product {
   id: number
@@ -19,6 +22,31 @@ interface Product {
 export function ProductCard({ product }: { product: Product }) {
   const [isLiked, setIsLiked] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  
+  const token = Cookies.get('token');
+  const [loadingCart, setLoadingCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    setLoadingCart(true);
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/agregar`, {
+        productId: product.id,
+        quantity: 1,
+      },
+      { headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      if (response.data) {
+        toast.success("Producto agregado al carrito");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    } finally {
+      setLoadingCart(false);
+    }
+  }
 
   const discount = product.originalPrice ? Math.round((1 - product.price / product.originalPrice) * 100) : 0
 
@@ -75,7 +103,7 @@ export function ProductCard({ product }: { product: Product }) {
             isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <button className="w-full py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-medium flex items-center justify-center gap-2 shadow-lg transition-all duration-300 hover:shadow-xl">
+          <button onClick={() => handleAddToCart()} className="w-full py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-medium flex items-center justify-center gap-2 shadow-lg transition-all duration-300 hover:shadow-xl">
             <ShoppingCartIcon className="w-5 h-5" />
             Agregar
           </button>

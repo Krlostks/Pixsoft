@@ -4,10 +4,38 @@ import { useState } from "react"
 import Link from "next/link"
 import { HeartIcon, ShoppingCartIcon, StarIcon } from "./icons"
 import type { ProductListItem } from "@/types/products"
+import { toast } from "sonner"
+import Cookies from "js-cookie"
+import axios from "axios"
 
 export function ProductGridCard({ product }: { product: ProductListItem }) {
   const [isLiked, setIsLiked] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+
+  const token = Cookies.get('token');
+  const [loadingCart, setLoadingCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    setLoadingCart(true);
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/agregar`, {
+        producto_id: product.id,
+        cantidad: 1,
+      },
+      { headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      if (response.data) {
+        toast.success("Producto agregado al carrito");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    } finally {
+      setLoadingCart(false);
+    }
+  }
 
   const precio = Number.parseFloat(product.precio)
   const precioDescuento = Number.parseFloat(product.precio_descuento)
@@ -74,7 +102,7 @@ export function ProductGridCard({ product }: { product: ProductListItem }) {
             }`}
           >
             <button
-              onClick={(e) => e.preventDefault()}
+              onClick={(e) => {e.preventDefault(); handleAddToCart()}}
               className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-110"
             >
               <ShoppingCartIcon className="w-5 h-5" />
