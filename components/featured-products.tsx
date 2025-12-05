@@ -96,51 +96,6 @@ const products = [
   },
 ]
 
-function CountdownTimer() {
-  const [timeLeft, setTimeLeft] = useState({
-    hours: 8,
-    minutes: 24,
-    seconds: 3,
-  })
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        let { hours, minutes, seconds } = prev
-        if (seconds > 0) {
-          seconds--
-        } else if (minutes > 0) {
-          minutes--
-          seconds = 59
-        } else if (hours > 0) {
-          hours--
-          minutes = 59
-          seconds = 59
-        }
-        return { hours, minutes, seconds }
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  return (
-    <div className="flex items-center gap-2">
-      {Object.entries(timeLeft).map(([unit, value], index) => (
-        <div key={unit} className="flex items-center gap-2">
-          <div className="flex flex-col items-center">
-            <span className="text-2xl lg:text-3xl font-bold text-foreground tabular-nums">
-              {value.toString().padStart(2, "0")}
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              {unit === "hours" ? "hrs" : unit === "minutes" ? "min" : "seg"}
-            </span>
-          </div>
-          {index < 2 && <span className="text-2xl font-light text-muted-foreground">:</span>}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export function FeaturedProducts() {
   return (
@@ -157,9 +112,6 @@ export function FeaturedProducts() {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="glass-subtle px-4 py-3 rounded-2xl">
-              <CountdownTimer />
-            </div>
             <a href="#" className="group flex items-center gap-1 text-primary font-medium hover:underline">
               Ver todos
               <ChevronRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
