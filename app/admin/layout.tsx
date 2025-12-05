@@ -37,6 +37,11 @@ const navItems = [
     icon: PackageIcon,
   },
   {
+    href: "/admin/proveedores",
+    label: "Proveedores",
+    icon: UsersIcon,
+  },
+  {
     href: "/admin/usuarios",
     label: "Usuarios",
     icon: UsersIcon,
