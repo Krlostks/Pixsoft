@@ -1,4 +1,4 @@
-// app/dashboard/inventario/page.tsx
+// components/inventario/InventarioProductos.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -54,7 +54,7 @@ interface Categoria {
     nombre: string
 }
 
-export default function InventarioAdminPage() {
+export default function InventarioProductos() {
     const [productos, setProductos] = useState<ProductListItem[]>([])
     const [stats, setStats] = useState<InventoryStats>({
         totalProductos: 0,
@@ -73,7 +73,6 @@ export default function InventarioAdminPage() {
     const [totalPages, setTotalPages] = useState(1)
     const [totalItems, setTotalItems] = useState(0)
     const [limit] = useState(10)
-    const [editingProductId, setEditingProductId] = useState<number | null>(null)
 
     // Cargar productos
     const fetchProductos = async (filters?: any) => {
@@ -94,7 +93,7 @@ export default function InventarioAdminPage() {
                 params.searchQuery = searchTerm
             }
 
-            // Filtro de estado
+            // Filtro de estado (activo/inactivo)
             if (statusFilter === "activo") {
                 params.activo = true
             } else if (statusFilter === "inactivo") {
@@ -151,10 +150,10 @@ export default function InventarioAdminPage() {
                 const productos = response.data.data
                 const totalProductos = productos.length
                 const bajoStock = productos.filter((p: ProductListItem) => 
-                    (p.stock || 0) < 10 && (p.stock || 0) > 0 && p.activo
+                    (p.stock || 0) < 10 && (p.stock || 0) > 0
                 ).length
                 const agotados = productos.filter((p: ProductListItem) => 
-                    (p.stock || 0) === 0 && p.activo
+                    (p.stock || 0) === 0
                 ).length
                 const valorTotal = productos.reduce((sum: number, p: ProductListItem) => 
                     sum + (parseFloat(p.precio) * (p.stock || 0)), 0
@@ -203,10 +202,9 @@ export default function InventarioAdminPage() {
             // Recargar productos y estadísticas
             fetchProductos()
             fetchStats()
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error al eliminar producto:", error)
-            const errorMessage = error.response?.data?.error || error.response?.data?.message || "Error al eliminar el producto"
-            toast.error(errorMessage)
+            toast.error("Error al eliminar el producto")
         }
     }
 
@@ -227,9 +225,9 @@ export default function InventarioAdminPage() {
     }, [searchTerm, categoryFilter, statusFilter])
 
     const getEstadoColor = (producto: ProductListItem) => {
-        if (!producto.activo) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
         if (producto.stock === 0) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
         if ((producto.stock || 0) < 10) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+        if (!producto.activo) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
     }
 
@@ -243,12 +241,7 @@ export default function InventarioAdminPage() {
     const handleSuccess = () => {
         fetchProductos()
         fetchStats()
-        setEditingProductId(null)
         toast.success("Operación completada exitosamente")
-    }
-
-    const handleEditClick = (id: number) => {
-        setEditingProductId(id)
     }
 
     // Formatear precio
@@ -469,12 +462,7 @@ export default function InventarioAdminPage() {
                                 variant="outline"
                                 size="sm"
                                 className="rounded-xl"
-                                onClick={() => {
-                                    setPage(1)
-                                    fetchProductos()
-                                    fetchStats()
-                                }}
-                                disabled={loading}
+                                onClick={() => setPage(1)}
                             >
                                 Refrescar
                             </Button>
@@ -485,7 +473,6 @@ export default function InventarioAdminPage() {
                     {loading ? (
                         <div className="flex justify-center items-center py-12">
                             <Loader2Icon className="w-8 h-8 animate-spin" />
-                            <span className="ml-2">Cargando productos...</span>
                         </div>
                     ) : productos.length === 0 ? (
                         <div className="text-center py-12">
@@ -545,7 +532,7 @@ export default function InventarioAdminPage() {
                                                 <TableCell className="font-bold">
                                                     <div className="flex flex-col">
                                                         <span>{formatPrice(producto.precio)}</span>
-                                                        {producto.precio_descuento && parseFloat(producto.precio_descuento) > 0 && (
+                                                        {producto.precio_descuento && parseFloat(producto.precio_descuento) < parseFloat(producto.precio) && (
                                                             <span className="text-xs text-red-600 dark:text-red-400 line-through">
                                                                 {formatPrice(producto.precio_descuento)}
                                                             </span>
@@ -571,12 +558,7 @@ export default function InventarioAdminPage() {
                                                     <div className="flex justify-end gap-2">
                                                         <Dialog>
                                                             <DialogTrigger asChild>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="icon" 
-                                                                    className="rounded-xl"
-                                                                    onClick={() => handleEditClick(producto.id)}
-                                                                >
+                                                                <Button variant="ghost" size="icon" className="rounded-xl">
                                                                     <EditIcon className="w-4 h-4" />
                                                                 </Button>
                                                             </DialogTrigger>
@@ -589,7 +571,6 @@ export default function InventarioAdminPage() {
                                                                 <div className="py-4">
                                                                     <AgregarProductoForm
                                                                         productId={producto.id}
-                                                                        isEditing={true}
                                                                         onSuccess={handleSuccess}
                                                                         onCancel={() => {
                                                                             document.querySelectorAll('[data-state="open"]').forEach(el => {
