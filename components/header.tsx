@@ -60,7 +60,7 @@ export function Header() {
     
     try {
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/usuarios/profile`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/usuarios/cuenta`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`
