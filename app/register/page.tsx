@@ -9,14 +9,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import axios from "axios"
+import { toast } from "sonner"
+import Cookies from "js-cookie"
+import { useRouter } from "next/navigation"
 
 type Step = "form" | "verification"
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("form")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [id_usuario, setId_usuario] = useState<number | null>(null)
 
   // Form data
   const [formData, setFormData] = useState({
@@ -72,17 +78,32 @@ export default function RegisterPage() {
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.password !== formData.confirmPassword) {
-      alert("Las contraseñas no coinciden")
+      toast.error("Las contraseñas no coinciden")
       return
     }
     if (!formData.acceptTerms) {
-      alert("Debes aceptar los términos y condiciones")
+      toast.error("Debes aceptar los términos y condiciones")
       return
     }
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    setStep("verification")
+    try {
+      const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + "/usuarios/register", {
+        nombre: formData.nombre,
+        apellidos: formData.apellidos,
+        email: formData.email,
+        password: formData.password,
+        telefono: formData.telefono
+      });
+      if (response.data.userId) {
+        setId_usuario(response.data.userId);
+        setStep("verification")
+        toast.success("Registro exitoso. Por favor verifica tu correo.")
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleVerifyCode = async (e: React.FormEvent) => {
@@ -93,9 +114,21 @@ export default function RegisterPage() {
       return
     }
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    // Redirect to home or dashboard
+    try {
+      const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + "/usuarios/verify-email", {
+        code: code,
+        userId: id_usuario 
+      })
+      if (response.data.token) {
+        router.push("/");
+        Cookies.set("token", response.data.token, { expires: 7 });
+        toast.success("¡Cuenta verificada con éxito! Ya puedes iniciar sesión.")
+      }
+    } catch (error) {
+      toast.error("Error during code verification:", axios.isAxiosError(error) && error.response ? error.response.data : "Error");
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const resendCode = async () => {
@@ -126,7 +159,7 @@ export default function RegisterPage() {
             <>
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-white to-cyan-200 flex items-center justify-center shadow-lg">
                   <Icons.userPlus className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Crear cuenta</h1>
@@ -203,7 +236,7 @@ export default function RegisterPage() {
                       id="telefono"
                       name="telefono"
                       type="tel"
-                      placeholder="+52 555 123 4567"
+                      placeholder="555 123 4567"
                       value={formData.telefono}
                       onChange={handleInputChange}
                       className="pl-9 h-11 bg-secondary/50 border-border/50 rounded-xl focus:bg-background transition-all duration-300"
@@ -290,7 +323,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 mt-2"
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-50 to-white hover:opacity-90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 mt-2"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">

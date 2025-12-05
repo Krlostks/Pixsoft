@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
+import { Toaster } from "sonner"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,9 +23,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <Header />
-      <body className={`${inter.className} font-sans antialiased`}>{children}</body>
-      <Footer />
+      <body className={`${inter.className} font-sans antialiased`}>
+        <Header />
+          {children}
+        <Footer />
+        <Toaster position="bottom-center" richColors />
+      </body>
     </html>
   )
 }

@@ -13,6 +13,7 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from "./icons"
+import Link from "next/link"
 
 const categories = [
   { name: "Promociones", href: "#" },
@@ -37,7 +38,7 @@ export function Header() {
   const [cartCount] = useState(3)
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className="sticky top-0 z-50 backdrop-blur-sm">
       {/* Promo Banner */}
       <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
         <p className="animate-pulse">
@@ -57,14 +58,9 @@ export function Header() {
               >
                 <MenuIcon className="w-6 h-6 text-foreground" />
               </button>
-              <a href="#" className="flex items-center gap-2 group">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 dark:from-cyan-500 dark:to-slate-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <span className="text-white font-bold text-lg">P</span>
-                </div>
-                <span className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-600 to-cyan-500 dark:from-cyan-400 dark:to-slate-300 bg-clip-text text-transparent">
-                  PixSoft
-                </span>
-              </a>
+              <Link href="/" className="flex items-center gap-2 group">
+                <img src="./pixsoft-logo.png" className="size-20 w-fit dark:invert-100" alt="Logo Pixsoft" />
+              </Link>
             </div>
 
             {/* Search Bar */}
@@ -126,13 +122,13 @@ export function Header() {
               </a>
 
               {/* User */}
-              <a
-                href="#"
+              <Link
+                href="/login"
                 className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300 group"
               >
                 <UserIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
                 <span className="hidden lg:block text-sm font-medium text-foreground">Ingresar</span>
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -172,13 +168,13 @@ export function Header() {
                 {isCategoriesOpen && (
                   <div className="absolute top-full left-0 mt-2 w-64 glass rounded-2xl shadow-xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                     {categories.map((category) => (
-                      <a
+                      <Link
                         key={category.name}
                         href={category.href}
                         className="flex items-center px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 hover:text-primary transition-all duration-200"
                       >
                         {category.name}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 )}
