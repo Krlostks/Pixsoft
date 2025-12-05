@@ -1,6 +1,7 @@
 "use client"
 
 import axios from "axios"
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
 interface Brand {
@@ -81,8 +82,9 @@ export function BrandsSection() {
 
           <div className="flex w-max animate-marquee gap-12 items-center">
             {infiniteBrands.map((brand, index) => (
-              <div
+              <Link
                 key={`${brand.id}-${index}`}
+                href={`/productos?marca=${brand.id}`}
                 className="flex-shrink-0 group cursor-pointer"
               >
                 <div className="w-32 h-16 flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 hover:scale-110">
@@ -93,7 +95,7 @@ export function BrandsSection() {
                     loading="lazy"
                   />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

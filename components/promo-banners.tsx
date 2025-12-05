@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { ChevronRightIcon } from "./icons"
 
 const banners = [
@@ -8,16 +9,18 @@ const banners = [
     headline: "¡MANTÉN TU PC EN FORMA!",
     description: "Herramientas para que tu equipo funcione sin problemas.",
     cta: "Ver más",
-    image: "/placeholder.svg?height=300&width=400",
+    image: "https://png.pngtree.com/png-clipart/20210627/original/pngtree-screwdriver-repair-metal-repair-png-image_6465230.jpg",
     gradient: "from-cyan-600 via-cyan-500 to-teal-500 dark:from-cyan-800 dark:via-slate-700 dark:to-slate-800",
+    href: "/productos?categoria=11"
   },
   {
-    title: "DRONES",
-    headline: "¡VUELA HACIA LO DESCONOCIDO!",
-    description: "Captura vistas asombrosas desde el aire.",
+    title: "CABLES",
+    headline: "CONECTA CON CONFIANZA",
+    description: "Cables de alta calidad para todas tus necesidades de conexión.",
     cta: "Ver más",
-    image: "/placeholder.svg?height=300&width=400",
+    image: "https://png.pngtree.com/png-vector/20231001/ourmid/pngtree-black-computer-cables-digital-png-image_10056556.png",
     gradient: "from-slate-700 via-slate-600 to-slate-500 dark:from-slate-800 dark:via-slate-700 dark:to-slate-600",
+    href: "/productos?categoria=10"
   },
 ]
 
@@ -27,7 +30,8 @@ export function PromoBanners() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {banners.map((banner, index) => (
-            <div
+            <Link
+              href={banner.href}
               key={index}
               className={`group relative overflow-hidden rounded-3xl bg-gradient-to-r ${banner.gradient} shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]`}
             >
@@ -61,7 +65,7 @@ export function PromoBanners() {
               {/* Decorative blobs */}
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
               <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
-            </div>
+            </Link>
           ))}
         </div>
       </div>

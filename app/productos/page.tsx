@@ -21,6 +21,7 @@ const sortOptions = [
 
 export default function ProductsPage() {
   const [filters, setFilters] = useState<ProductFilters>({ page: 1, limit: ITEMS_PER_PAGE })
+  const [isInitialized, setIsInitialized] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortOpen, setSortOpen] = useState(false)
   const [sortBy, setSortBy] = useState("newest")
@@ -33,12 +34,10 @@ export default function ProductsPage() {
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Construir query params EXACTAMENTE como los necesita el backend
       const params = new URLSearchParams()
       params.append("page", String(filters.page || 1))
       params.append("limit", String(filters.limit || ITEMS_PER_PAGE))
 
-      // IMPORTANTE: Enviar los IDs como strings, igual que en tus ejemplos
       if (filters.marca !== undefined) params.append("marca", String(filters.marca))
       if (filters.categoria !== undefined) params.append("categoria", String(filters.categoria))
       if (filters.tipo) params.append("tipo", filters.tipo)
@@ -51,7 +50,6 @@ export default function ProductsPage() {
 
       const productosData = response.data.data
 
-      // Ordenamiento en frontend (si el backend no lo soporta)
       switch (sortBy) {
         case "price-asc":
           productosData.sort((a, b) => Number.parseFloat(a.precio_descuento) - Number.parseFloat(b.precio_descuento))
@@ -82,8 +80,32 @@ export default function ProductsPage() {
   }, [filters, sortBy])
 
   useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
+    const params = new URLSearchParams(window.location.search)
+    const categoriaParam = params.get('categoria')
+    const marcaParam = params.get('marca')
+    const tipoParam = params.get('tipo')
+
+    const newFilters: ProductFilters = { page: 1, limit: ITEMS_PER_PAGE }
+
+    if (categoriaParam) {
+      newFilters.categoria = Number(categoriaParam)
+    }
+    if (marcaParam) {
+      newFilters.marca = Number(marcaParam)
+    }
+    if (tipoParam) {
+      newFilters.tipo = tipoParam as "fisico" | "digital"
+    }
+
+    setFilters(newFilters)
+    setIsInitialized(true)
+  }, [])
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchProducts()
+    }
+  }, [fetchProducts, isInitialized])
 
   const handlePageChange = (page: number) => {
     setFilters((prev) => ({ ...prev, page }))
@@ -94,6 +116,7 @@ export default function ProductsPage() {
     setSortBy(value)
     setSortOpen(false)
   }
+
 
   return (
     <div className="min-h-screen bg-background">

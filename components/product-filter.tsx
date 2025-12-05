@@ -65,6 +65,24 @@ export function ProductFiltersComponent({ filters, onFiltersChange }: ProductFil
     fetchMarcas()
   }, [])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const categoriaParam = params.get('categoria')
+    const marcaParam = params.get('marca')
+    const tipoParam = params.get('tipo')
+
+    if (categoriaParam) {
+      updateFilter('categoria', Number(categoriaParam))
+    }
+    if (marcaParam) {
+      updateFilter('marca', Number(marcaParam))
+    }
+    if (tipoParam) {
+      updateFilter('tipo', tipoParam)
+    }
+  }, [])
+
+
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]))
   }
