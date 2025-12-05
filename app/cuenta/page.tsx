@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import axios from "axios"
 import { User, Mail, Clock, Calendar, Edit2, X, Image } from "lucide-react"
-
+import ProtectedRoute from "@/components/auth/ProtectedRoute" // Importa el componente de protección
 
 // --- Iconos (resumidos para no repetir todo) ---
 const UserIcon = ({ className = "w-6 h-6" }) => <svg />
@@ -32,7 +32,7 @@ interface EditFormData {
   url_imagen_user: string
 }
 
-export default function UserProfilePage() {
+function UserProfileContent() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -132,10 +132,28 @@ export default function UserProfilePage() {
     })
   }
 
-  if (isLoading) return <p>Cargando perfil...</p>
-  if (!userData) return <p>Usuario no encontrado</p>
+  if (isLoading) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-600 font-medium">Cargando perfil...</p>
+      </div>
+    </div>
+  )
+  
+  if (!userData) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+          <User className="w-8 h-8 text-red-600" strokeWidth={2} />
+        </div>
+        <p className="text-red-600 font-semibold">Usuario no encontrado</p>
+        <p className="text-slate-500 mt-2">Intenta iniciar sesión nuevamente</p>
+      </div>
+    </div>
+  )
 
-return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <main className="py-12 px-4">
         <div className="container mx-auto max-w-6xl">
@@ -391,154 +409,6 @@ return (
                   />
                   <p className="text-xs font-medium text-slate-500 mt-2">Deja vacío para usar el avatar predeterminado</p>
                 </div>
-                {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div 
-            className="absolute inset-0 bg-slate-900/20 backdrop-blur-md"
-            onClick={() => !isSaving && setIsEditModalOpen(false)}
-          ></div>
-
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white/70 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="p-8">
-              
-              {/* Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                    <Edit2 className="w-7 h-7 text-white" strokeWidth={2} />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-bold text-slate-800">Editar Perfil</h2>
-                    <p className="text-slate-600 text-sm font-medium mt-1">Actualiza tu información personal</p>
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => !isSaving && setIsEditModalOpen(false)}
-                  className="p-3 bg-slate-100/60 backdrop-blur-sm hover:bg-slate-200/80 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md"
-                  disabled={isSaving}
-                >
-                  <X className="w-6 h-6 text-slate-600" strokeWidth={2} />
-                </button>
-              </div>
-
-              {/* Photo Preview */}
-              <div className="flex flex-col items-center gap-4 mb-8 p-6 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-white/60 rounded-2xl">
-                <div className="w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/25 ring-4 ring-white/50">
-                  {editForm.url_imagen_user ? (
-                    <img 
-                      src={editForm.url_imagen_user} 
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <User className="w-14 h-14 text-white" strokeWidth={1.5} />
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm font-semibold text-slate-600">Vista previa de la foto</p>
-              </div>
-
-              {/* Form */}
-              <div className="space-y-5">
-                
-                {/* First Name */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <User className="w-4 h-4 text-blue-600" strokeWidth={2.5} />
-                    Nombre
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.first_name}
-                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-white/60 backdrop-blur-sm border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-2xl text-slate-800 placeholder:text-slate-400 font-medium focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200"
-                    placeholder="Ingresa tu nombre"
-                    disabled={isSaving}
-                  />
-                </div>
-
-                {/* Last Name */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <User className="w-4 h-4 text-indigo-600" strokeWidth={2.5} />
-                    Apellido
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.last_name}
-                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-white/60 backdrop-blur-sm border-2 border-slate-200 hover:border-indigo-300 focus:border-indigo-500 rounded-2xl text-slate-800 placeholder:text-slate-400 font-medium focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all duration-200"
-                    placeholder="Ingresa tu apellido"
-                    disabled={isSaving}
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <Mail className="w-4 h-4 text-purple-600" strokeWidth={2.5} />
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-white/60 backdrop-blur-sm border-2 border-slate-200 hover:border-purple-300 focus:border-purple-500 rounded-2xl text-slate-800 placeholder:text-slate-400 font-medium focus:ring-4 focus:ring-purple-500/10 focus:outline-none transition-all duration-200"
-                    placeholder="tu@email.com"
-                    disabled={isSaving}
-                  />
-                </div>
-
-                {/* Image URL */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <Image className="w-4 h-4 text-pink-600" strokeWidth={2.5} />
-                    URL de Foto de Perfil
-                  </label>
-                  <input
-                    type="url"
-                    value={editForm.url_imagen_user}
-                    onChange={(e) => setEditForm({ ...editForm, url_imagen_user: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-white/60 backdrop-blur-sm border-2 border-slate-200 hover:border-pink-300 focus:border-pink-500 rounded-2xl text-slate-800 placeholder:text-slate-400 font-medium focus:ring-4 focus:ring-pink-500/10 focus:outline-none transition-all duration-200"
-                    placeholder="https://ejemplo.com/foto.jpg"
-                    disabled={isSaving}
-                  />
-                  <p className="text-xs font-medium text-slate-500 mt-2">Deja vacío para usar el avatar predeterminado</p>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-4 pt-6">
-                  <button
-                    onClick={() => !isSaving && setIsEditModalOpen(false)}
-                    className="flex-1 px-6 py-4 bg-slate-100/80 backdrop-blur-sm hover:bg-slate-200 border border-slate-200 rounded-2xl font-bold text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                    disabled={isSaving}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSaveChanges}
-                    disabled={isSaving}
-                    className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Guardando...</span>
-                      </>
-                    ) : (
-                      <span>Guardar Cambios</span>
-                    )}
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
                 {/* Buttons */}
                 <div className="flex gap-4 pt-6">
@@ -572,4 +442,13 @@ return (
       )}
     </div>
   );
-};
+}
+
+// Componente principal que envuelve el contenido con ProtectedRoute
+export default function UserProfilePage() {
+  return (
+    <ProtectedRoute>
+      <UserProfileContent />
+    </ProtectedRoute>
+  )
+}
