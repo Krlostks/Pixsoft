@@ -15,27 +15,45 @@ export function ProductGridCard({ product }: { product: ProductListItem }) {
   const token = Cookies.get('token');
   const [loadingCart, setLoadingCart] = useState(false);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!token) {
       toast.error("Debes iniciar sesión para agregar productos al carrito");
       return;
     }
+    
     setLoadingCart(true);
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/agregar`, {
-        producto_id: product.id,
-        cantidad: 1,
-      },
-      { headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/agregar`, 
+        {
+          producto_id: product.id,
+          cantidad: 1,
         },
-      });
-      if (response.data) {
+        { 
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        }
+      );
+      
+      if (response.data.success) {
         toast.success("Producto agregado al carrito");
+        // Disparar evento para actualizar el contador en el header
+        window.dispatchEvent(new Event('cartUpdated'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding to cart:", error);
+      if (error.response?.status === 401) {
+        toast.error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        Cookies.remove("token");
+        window.location.reload();
+      } else {
+        toast.error("Error al agregar producto al carrito");
+      }
     } finally {
       setLoadingCart(false);
     }
@@ -70,24 +88,6 @@ export function ProductGridCard({ product }: { product: ProductListItem }) {
         </div>
       )}
 
-      {/* Like Button */}
-      <button
-        onClick={(e) => {
-          e.preventDefault()
-          setIsLiked(!isLiked)
-        }}
-        className={`absolute ${descuento > 0 ? "top-14" : "top-4"} right-4 z-10 p-2.5 rounded-full transition-all duration-300 ${
-          isLiked
-            ? "bg-rose-100 dark:bg-rose-900/50"
-            : "bg-white/80 dark:bg-slate-800/80 opacity-0 group-hover:opacity-100"
-        }`}
-      >
-        <HeartIcon
-          className={`w-5 h-5 transition-colors duration-300 ${isLiked ? "text-rose-500" : "text-muted-foreground"}`}
-          filled={isLiked}
-        />
-      </button>
-
       <Link href={`/productos/${product.id}`}>
         {/* Image */}
         <div className="relative aspect-square p-6 bg-gradient-to-br from-secondary/30 to-secondary/10">
@@ -98,20 +98,6 @@ export function ProductGridCard({ product }: { product: ProductListItem }) {
               isHovered ? "scale-110" : "scale-100"
             }`}
           />
-
-          {/* Quick Add */}
-          <div
-            className={`absolute bottom-4 right-4 transition-all duration-300 ${
-              isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
-            <button
-              onClick={(e) => {e.preventDefault(); handleAddToCart()}}
-              className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-110"
-            >
-              <ShoppingCartIcon className="w-5 h-5" />
-            </button>
-          </div>
         </div>
 
         {/* Content */}
@@ -168,6 +154,37 @@ export function ProductGridCard({ product }: { product: ProductListItem }) {
                     ? `¡Solo ${product.stock} disponibles!`
                     : "Agotado"}
             </span>
+          </div>
+
+          {/* Add to Cart Button - SIEMPRE VISIBLE */}
+          <div className="mt-4">
+            <button
+              onClick={handleAddToCart}
+              disabled={loadingCart || (product.stock !== null && product.stock <= 0)}
+              className={`w-full py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                product.stock !== null && product.stock <= 0
+                  ? "bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
+                  : loadingCart
+                  ? "bg-primary/70 text-primary-foreground cursor-wait"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02]"
+              }`}
+            >
+              {loadingCart ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                  <span>Agregando...</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCartIcon className="w-4 h-4" />
+                  <span>
+                    {product.stock !== null && product.stock <= 0
+                      ? "Agotado"
+                      : "Agregar al carrito"}
+                  </span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </Link>

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Footer } from "@/components/footer"
 import { 
   ShoppingCartIcon, 
   TrashIcon, 
@@ -178,7 +177,6 @@ export default function CartPage() {
   if (!token && !isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        {/* EL HEADER YA ESTÁ EN EL LAYOUT, NO LO INCLUYAS AQUÍ */}
         <main className="pt-10 pb-20">
           <div className="container mx-auto px-4">
             <div className="mb-8">
@@ -218,14 +216,12 @@ export default function CartPage() {
             </div>
           </div>
         </main>
-        {/* EL FOOTER YA ESTÁ EN EL LAYOUT, NO LO INCLUYAS AQUÍ */}
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* EL HEADER YA ESTÁ EN EL LAYOUT, NO LO INCLUYAS AQUÍ */}
       <main className="pt-10 pb-20">
         <div className="container mx-auto px-4">
           {/* Page Header */}
@@ -445,7 +441,6 @@ export default function CartPage() {
           )}
         </div>
       </main>
-      {/* EL FOOTER YA ESTÁ EN EL LAYOUT, NO LO INCLUYAS AQUÍ */}
     </div>
   )
 }

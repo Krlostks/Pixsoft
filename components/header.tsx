@@ -6,7 +6,6 @@ import {
   SunIcon,
   MoonIcon,
   SearchIcon,
-  HeartIcon,
   ShoppingCartIcon,
   UserIcon,
   MenuIcon,
@@ -15,6 +14,7 @@ import {
 } from "./icons"
 import Link from "next/link"
 import Cookies from "js-cookie"
+import axios from "axios"
 
 const categories = [
   { name: "Promociones", href: "#" },
@@ -36,18 +36,79 @@ export function Header() {
   const { isDark, toggleTheme, mounted } = useTheme()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
-  const [cartCount] = useState(3)
- const [token, setToken] = useState<string | null>(null);
+  const [cartCount, setCartCount] = useState(0)
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoadingCart, setIsLoadingCart] = useState(false)
 
-useEffect(() => {
-  const t = Cookies.get("token");
-  setToken(t || null);
-}, []);
+  // Función para obtener el conteo del carrito
+  const fetchCartCount = async (authToken: string) => {
+    if (!authToken) return
+    
+    setIsLoadingCart(true)
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/carrito/`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        }
+      )
+      
+      if (response.data.success && response.data.items) {
+        const totalItems = response.data.items.reduce((sum: number, item: any) => 
+          sum + item.cantidad, 0
+        )
+        setCartCount(totalItems)
+      } else {
+        setCartCount(0)
+      }
+    } catch (error) {
+      console.error("Error al obtener carrito:", error)
+      setCartCount(0)
+    } finally {
+      setIsLoadingCart(false)
+    }
+  }
+
+  // Obtener token y carrito inicial
+  useEffect(() => {
+    const t = Cookies.get("token")
+    setToken(t || null)
+    
+    if (t) {
+      fetchCartCount(t)
+    } else {
+      setCartCount(0)
+    }
+  }, [])
+
+  // Escuchar eventos de actualización del carrito
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      const t = Cookies.get("token")
+      if (t) {
+        fetchCartCount(t)
+      }
+    }
+    
+    window.addEventListener('cartUpdated', handleCartUpdate)
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate)
+  }, [])
+
+  // Actualizar carrito cuando cambie el token
+  useEffect(() => {
+    if (token) {
+      fetchCartCount(token)
+    } else {
+      setCartCount(0)
+    }
+  }, [token])
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-sm">
       {/* Promo Banner */}
-      <div className="bg-linear-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
+      <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
         <p className="animate-pulse">
           <span className="font-semibold">Envío GRATIS</span> en compras mayores a $999 | Hasta 18 MSI
         </p>
@@ -110,74 +171,84 @@ useEffect(() => {
                 </div>
               </button>
 
-              {/* Favorites */}
-              <a
-                href="#"
-                className="hidden sm:flex p-2.5 rounded-xl hover:bg-secondary/80 transition-all duration-300 group"
-              >
-                <HeartIcon className="w-5 h-5 text-foreground group-hover:text-rose-500 transition-colors duration-300" />
-              </a>
-
-              {/* Cart */}
-              <a href="#" className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all duration-300 group">
-                <ShoppingCartIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground rounded-full animate-pulse">
-                    {cartCount}
-                  </span>
-                )}
-              </a>
+              {/* Cart - SOLO SE MUESTRA SI HAY TOKEN */}
+              {token && (
+                <Link 
+                  href="/carrito" 
+                  className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all duration-300 group"
+                >
+                  <ShoppingCartIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
+                  {cartCount > 0 && !isLoadingCart && (
+                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground rounded-full animate-pulse">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                  {isLoadingCart && token && (
+                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-primary/50 text-primary-foreground rounded-full">
+                      ...
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* User */}
-              {token === null ? (<Link
-                href="/login"
-                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300 group"
-              >
-                <UserIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
-                <span className="hidden lg:block text-sm font-medium text-foreground">Ingresar</span>
-              </Link>):
-              <div className="relative group">
-            <button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300">
-              <UserIcon className="w-5 h-5 text-foreground" />
-              <span className="hidden lg:block text-sm font-medium text-foreground">
-                Mi Cuenta
-              </span>
-            </button>
+              {token === null ? (
+                <Link
+                  href="/login"
+                  className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300 group"
+                >
+                  <UserIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
+                  <span className="hidden lg:block text-sm font-medium text-foreground">Ingresar</span>
+                </Link>
+              ) : (
+                <div className="relative group">
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300">
+                    <UserIcon className="w-5 h-5 text-foreground" />
+                    <span className="hidden lg:block text-sm font-medium text-foreground">
+                      Mi Cuenta
+                    </span>
+                  </button>
 
-            
-            <div className="absolute right-0 mt-0 w-48 bg-card rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all">
-              <Link
-                href="/cuenta"
-                className="block px-4 py-2 hover:bg-secondary/50 rounded-t-xl"
-              >
-                Perfil
-              </Link>
-              <Link
-                href="/ordenes"
-                className="block px-4 py-2 hover:bg-secondary/50"
-              >
-                Mis órdenes
-              </Link>
-              <Link
-                href="/direcciones"
-                className="block px-4 py-2 hover:bg-secondary/50 rounded-b-xl"
-              >
-                Direcciones
-              </Link>
+                  <div className="absolute right-0 mt-0 w-48 bg-card rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50">
+                    <Link
+                      href="/cuenta"
+                      className="block px-4 py-2 hover:bg-secondary/50 rounded-t-xl"
+                    >
+                      Perfil
+                    </Link>
+                    <Link
+                      href="/ordenes"
+                      className="block px-4 py-2 hover:bg-secondary/50"
+                    >
+                      Mis órdenes
+                    </Link>
+                    <Link
+                      href="/direcciones"
+                      className="block px-4 py-2 hover:bg-secondary/50"
+                    >
+                      Direcciones
+                    </Link>
+                    <Link
+                      href="/carrito"
+                      className="block px-4 py-2 hover:bg-secondary/50"
+                    >
+                      Mi Carrito
+                    </Link>
 
-              {/* Logout */}
-              <button
-                className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-600"
-                onClick={() => {
-                  Cookies.remove("token");
-                  window.location.reload();
-                }}
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          </div>
-              }
+                    {/* Logout */}
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-600 rounded-b-xl"
+                      onClick={() => {
+                        Cookies.remove("token")
+                        localStorage.removeItem("token")
+                        window.location.reload()
+                      }}
+                    >
+                      Cerrar sesión
+                    </button>
+                  </div>
+                </div>
+              )}
               
             </div>
           </div>
@@ -216,7 +287,7 @@ useEffect(() => {
 
                 {/* Categories Dropdown Menu */}
                 {isCategoriesOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-64 glass rounded-2xl shadow-xl py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 mt-2 w-64 glass rounded-2xl shadow-xl py-2 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                     {categories.map((category) => (
                       <Link
                         key={category.name}
