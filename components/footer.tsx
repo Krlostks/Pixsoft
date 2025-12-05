@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { MailIcon, PhoneIcon, MapPinIcon } from "./icons"
 
 const footerLinks = {
@@ -23,14 +24,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <a href="#" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-cyan-400 to-cyan-600 dark:from-cyan-500 dark:to-slate-600 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">P</span>
-              </div>
-              <span className="text-xl font-bold bg-linear-to-r from-cyan-600 to-cyan-500 dark:from-cyan-400 dark:to-slate-300 bg-clip-text text-transparent">
-                PixSoft
-              </span>
-            </a>
+            <Link href="/" className="flex items-center gap-2 mb-4">
+              <img src="./pixsoft-logo.png" className="size-20 w-fit dark:invert-100" alt="Logo Pixsoft" />
+            </Link>
             <p className="text-muted-foreground mb-6 max-w-sm">
               Tu destino para hardware, computadoras, laptops y tecnología de calidad premium al mejor precio.
             </p>
