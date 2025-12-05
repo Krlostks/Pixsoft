@@ -93,7 +93,7 @@ export function ProductGridCard({
                 )}
               </div>
               
-              <div className="aspect-square p-4 sm:p-5 bg-gradient-to-br from-secondary/20 to-secondary/5">
+              <div className="aspect-square p-4 sm:p-5 bg-linear-to-br from-secondary/20 to-secondary/5">
                 <img
                   src={product.url_imagen || "/placeholder.svg"}
                   alt={product.producto_nombre}
@@ -239,7 +239,7 @@ export function ProductGridCard({
 
       <Link href={`/productos/${product.id}`}>
         {/* Imagen */}
-        <div className="relative aspect-square p-4 sm:p-6 bg-gradient-to-br from-secondary/20 to-secondary/5">
+        <div className="relative aspect-square p-4 sm:p-6 bg-linear-to-br from-secondary/20 to-secondary/5">
           <img
             src={product.url_imagen || "/placeholder.svg"}
             alt={product.producto_nombre}

@@ -185,13 +185,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {/* Badges Container */}
                 <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
                   {product.destacado && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg animate-pulse">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-linear-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg animate-pulse">
                       <SparklesIcon className="w-3.5 h-3.5" />
                       Destacado
                     </span>
                   )}
                   {descuento > 0 && (
-                    <span className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-full shadow-lg">
+                    <span className="px-3 py-1.5 text-xs font-bold bg-linear-to-r from-rose-500 to-pink-500 text-white rounded-full shadow-lg">
                       -{descuento}% OFF
                     </span>
                   )}
@@ -218,7 +218,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 {/* Image Container with Zoom Effect */}
-                <div className="p-8 lg:p-12 h-full flex items-center justify-center bg-gradient-to-br from-white/50 to-white/20 dark:from-slate-800/50 dark:to-slate-900/20 overflow-hidden">
+                <div className="p-8 lg:p-12 h-full flex items-center justify-center bg-linear-to-br from-white/50 to-white/20 dark:from-slate-800/50 dark:to-slate-900/20 overflow-hidden">
                   <img
                     src={imagen || "/placeholder.svg"}
                     alt={product.producto_nombre}
@@ -274,7 +274,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   {tieneDescuento && (
                     <div className="flex items-center gap-3 mb-1">
                       <span className="text-xl text-muted-foreground line-through">${precio.toLocaleString()}</span>
-                      <span className="px-2.5 py-1 bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/30 text-rose-500 dark:text-rose-400 rounded-lg text-sm font-bold">
+                      <span className="px-2.5 py-1 bg-linear-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/30 text-rose-500 dark:text-rose-400 rounded-lg text-sm font-bold">
                         Ahorras ${(precio - precioFinal).toLocaleString()}
                       </span>
                     </div>
@@ -326,7 +326,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                 <button
                   disabled={stock === 0}
-                  className="w-full py-4 px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:from-muted disabled:to-muted disabled:cursor-not-allowed text-primary-foreground rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-500 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-4 px-8 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:from-muted disabled:to-muted disabled:cursor-not-allowed text-primary-foreground rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-500 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <ShoppingCartIcon className="w-6 h-6" />
                   Agregar al Carrito
@@ -377,7 +377,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 >
                   {tab.label}
                   {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-primary/50" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-primary to-primary/50" />
                   )}
                 </button>
               ))}

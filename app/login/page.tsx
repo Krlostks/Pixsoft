@@ -55,7 +55,7 @@ export default function LoginPage() {
         <div className="glass rounded-3xl p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg">
               <Icons.user className="w-8 h-8 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">Bienvenido de vuelta</h1>

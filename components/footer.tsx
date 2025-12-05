@@ -24,10 +24,10 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <a href="#" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 dark:from-cyan-500 dark:to-slate-600 flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-cyan-400 to-cyan-600 dark:from-cyan-500 dark:to-slate-600 flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-lg">P</span>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-cyan-500 dark:from-cyan-400 dark:to-slate-300 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-linear-to-r from-cyan-600 to-cyan-500 dark:from-cyan-400 dark:to-slate-300 bg-clip-text text-transparent">
                 PixSoft
               </span>
             </a>

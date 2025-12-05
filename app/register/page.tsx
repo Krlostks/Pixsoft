@@ -157,7 +157,7 @@ export default function RegisterPage() {
             <>
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-white to-cyan-200 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-linear-to-br from-white to-cyan-200 flex items-center justify-center shadow-lg">
                   <Icons.userPlus className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Crear cuenta</h1>
@@ -321,7 +321,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-50 to-white hover:opacity-90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 mt-2"
+                  className="w-full h-12 rounded-xl bg-linear-to-r from-cyan-50 to-white hover:opacity-90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 mt-2"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
@@ -352,7 +352,7 @@ export default function RegisterPage() {
                 >
                   <Icons.arrowLeft className="w-5 h-5" />
                 </button>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                   <Icons.shield className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Verificar correo</h1>
@@ -385,7 +385,7 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   disabled={isLoading || verificationCode.some((d) => !d)}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                  className="w-full h-12 rounded-xl bg-linear-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">

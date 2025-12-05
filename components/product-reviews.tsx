@@ -54,7 +54,7 @@ export function ProductReviews({ promedioCalificacion, opiniones, estadisticas }
       {/* Header con resumen y botón */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
         {/* Resumen de calificación */}
-        <div className="flex flex-col sm:flex-row lg:flex-col items-center sm:items-start lg:items-center gap-4 lg:gap-2 p-6 rounded-3xl bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-slate-800 dark:to-slate-900/50 border border-cyan-200/50 dark:border-slate-700/50 lg:min-w-[200px]">
+        <div className="flex flex-col sm:flex-row lg:flex-col items-center sm:items-start lg:items-center gap-4 lg:gap-2 p-6 rounded-3xl bg-linear-to-br from-cyan-50 to-cyan-100/50 dark:from-slate-800 dark:to-slate-900/50 border border-cyan-200/50 dark:border-slate-700/50 lg:min-w-[200px]">
           <div className="text-center">
             <span className="text-5xl lg:text-6xl font-bold text-foreground">{promedioCalificacion.toFixed(1)}</span>
             <div className="flex items-center justify-center gap-1 mt-2">
@@ -83,7 +83,7 @@ export function ProductReviews({ promedioCalificacion, opiniones, estadisticas }
               </div>
               <Progress
                 value={item.porcentaje}
-                className="h-2.5 flex-1 bg-slate-200 dark:bg-slate-700 [&>div]:bg-gradient-to-r [&>div]:from-cyan-500 [&>div]:to-cyan-400 dark:[&>div]:from-cyan-600 dark:[&>div]:to-cyan-500"
+                className="h-2.5 flex-1 bg-slate-200 dark:bg-slate-700 [&>div]:bg-linear-to-r [&>div]:from-cyan-500 [&>div]:to-cyan-400 dark:[&>div]:from-cyan-600 dark:[&>div]:to-cyan-500"
               />
               <span className="text-sm text-muted-foreground w-12 text-right">{item.cantidad}</span>
             </div>
@@ -107,7 +107,7 @@ export function ProductReviews({ promedioCalificacion, opiniones, estadisticas }
                 <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:w-24 flex-shrink-0">
                   <Avatar className="w-12 h-12 border-2 border-cyan-200 dark:border-slate-600">
                     <AvatarImage alt={resena.usuario_nombre ?? "Usuario"} />
-                    <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white font-semibold">
+                    <AvatarFallback className="bg-linear-to-br from-cyan-500 to-cyan-600 text-white font-semibold">
                       {(resena.usuario_nombre ?? "Usuario")
                         .split(" ")
                         .map((n) => n[0])

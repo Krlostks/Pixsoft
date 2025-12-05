@@ -144,7 +144,7 @@ export function ChatFloating() {
             <CardContent className="flex flex-col flex-1 p-0 max-h-[50vh]">
               <div
                 ref={messagesRef}
-                className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-gradient-to-b from-background to-muted"
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-linear-to-b from-background to-muted"
               >
                 {messages.map((msg, i) => (
                   <div

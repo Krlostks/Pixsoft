@@ -33,7 +33,7 @@ export function PromoBanners() {
             <Link
               href={banner.href}
               key={index}
-              className={`group relative overflow-hidden rounded-3xl bg-gradient-to-r ${banner.gradient} shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]`}
+              className={`group relative overflow-hidden rounded-3xl bg-linear-to-r ${banner.gradient} shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]`}
             >
               {/* Glass overlay */}
               <div className="absolute inset-0 bg-white/5 dark:bg-black/10" />

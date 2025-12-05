@@ -77,8 +77,8 @@ export function BrandsSection() {
 
         <div className="relative overflow-hidden">
           {/* máscara para degradar bordes */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-secondary/30 dark:from-secondary/20 to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-secondary/30 dark:from-secondary/20 to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-linear-to-r from-secondary/30 dark:from-secondary/20 to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-linear-to-l from-secondary/30 dark:from-secondary/20 to-transparent z-10" />
 
           <div className="flex w-max animate-marquee gap-12 items-center">
             {infiniteBrands.map((brand, index) => (

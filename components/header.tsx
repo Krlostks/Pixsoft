@@ -137,7 +137,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-sm">
       {/* Promo Banner */}
-      <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
+      <div className="bg-linear-to-r from-cyan-500 to-cyan-600 dark:from-slate-700 dark:to-slate-800 text-white py-2 px-4 text-center text-sm">
         <p className="animate-pulse">
           <span className="font-semibold">Envío GRATIS</span> en compras mayores a $999 | Hasta 18 MSI
         </p>

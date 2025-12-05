@@ -107,7 +107,7 @@ export function CategoriesSection() {
               <div
                 className={`
                   absolute inset-0 
-                  bg-gradient-to-br
+                  bg-linear-to-br
                   ${category.gradient}
                   opacity-0 group-hover:opacity-100 
                   transition-opacity duration-500
@@ -125,7 +125,7 @@ export function CategoriesSection() {
               </div>
 
               {/* Overlay Content */}
-              <div className="absolute inset-0 flex flex-col justify-end p-4 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute inset-0 flex flex-col justify-end p-4 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <h3 className="text-white font-semibold text-sm lg:text-base line-clamp-1">
                   {category.nombre}
                 </h3>
@@ -135,7 +135,7 @@ export function CategoriesSection() {
               </div>
 
               {/* Default Label */}
-              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-background/60 group-hover:opacity-0 transition-opacity duration-300">
+              <div className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-background/95 to-background/60 group-hover:opacity-0 transition-opacity duration-300">
                 <h3 className="text-foreground font-medium text-sm text-center truncate">
                   {category.nombre}
                 </h3>
