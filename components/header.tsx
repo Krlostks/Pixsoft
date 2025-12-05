@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTheme } from "@/hooks/use-theme"
 import {
   SunIcon,
@@ -14,6 +14,7 @@ import {
   XMarkIcon,
 } from "./icons"
 import Link from "next/link"
+import Cookies from "js-cookie"
 
 const categories = [
   { name: "Promociones", href: "#" },
@@ -36,6 +37,12 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
   const [cartCount] = useState(3)
+ const [token, setToken] = useState<string | null>(null);
+
+useEffect(() => {
+  const t = Cookies.get("token");
+  setToken(t || null);
+}, []);
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-sm">
@@ -122,13 +129,56 @@ export function Header() {
               </a>
 
               {/* User */}
-              <Link
+              {token === null ? (<Link
                 href="/login"
                 className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300 group"
               >
                 <UserIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors duration-300" />
                 <span className="hidden lg:block text-sm font-medium text-foreground">Ingresar</span>
+              </Link>):
+              <div className="relative group">
+            <button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/80 transition-all duration-300">
+              <UserIcon className="w-5 h-5 text-foreground" />
+              <span className="hidden lg:block text-sm font-medium text-foreground">
+                Mi Cuenta
+              </span>
+            </button>
+
+            
+            <div className="absolute right-0 mt-0.5 w-48 bg-card rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all">
+              <Link
+                href="/cuenta"
+                className="block px-4 py-2 hover:bg-secondary/50 rounded-t-xl"
+              >
+                Perfil
               </Link>
+              <Link
+                href="/ordenes"
+                className="block px-4 py-2 hover:bg-secondary/50"
+              >
+                Mis órdenes
+              </Link>
+              <Link
+                href="/direcciones"
+                className="block px-4 py-2 hover:bg-secondary/50 rounded-b-xl"
+              >
+                Direcciones
+              </Link>
+
+              {/* Logout */}
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-600"
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  window.location.reload();
+                }}
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+              }
+              
             </div>
           </div>
 

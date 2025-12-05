@@ -12,12 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import axios from "axios"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
-import { useRouter } from "next/navigation"
 
 type Step = "form" | "verification"
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [step, setStep] = useState<Step>("form")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -120,7 +118,7 @@ export default function RegisterPage() {
         userId: id_usuario 
       })
       if (response.data.token) {
-        router.push("/");
+        window.location.href = "/"
         Cookies.set("token", response.data.token, { expires: 7 });
         toast.success("¡Cuenta verificada con éxito! Ya puedes iniciar sesión.")
       }

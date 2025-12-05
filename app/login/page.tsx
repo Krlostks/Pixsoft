@@ -11,10 +11,8 @@ import { Label } from "@/components/ui/label"
 import axios from "axios"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -29,7 +27,7 @@ export default function LoginPage() {
         password
       });
       if (response.data.token) {
-        router.push("/");
+        window.location.href = "/"
         Cookies.set("token", response.data.token, { expires: 7 });
         toast.success("Inicio de sesión exitoso. ¡Bienvenido de nuevo!");
       }
