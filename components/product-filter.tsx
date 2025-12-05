@@ -203,7 +203,7 @@ function FilterContent({
         ) : marcas.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay marcas disponibles</p>
         ) : (
-          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+          <div className="space-y-2 max-h-48 overflow-y-auto ">
             {marcas.map((marca) => (
               <label key={marca.id} className="flex items-center gap-3 cursor-pointer group">
                 <div
@@ -251,7 +251,7 @@ function FilterContent({
         ) : categorias.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay categorías disponibles</p>
         ) : (
-          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {categorias.map((categoria) => (
               <label key={categoria.id} className="flex items-center gap-3 cursor-pointer group">
                 <div

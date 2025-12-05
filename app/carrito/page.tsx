@@ -185,7 +185,7 @@ export default function CartPage() {
                 className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors duration-300 mb-6"
               >
                 <ArrowLeftIcon className="w-4 h-4" />
-                <span>Volver a productos</span>
+                <span>Ver los productos</span>
               </Link>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Mi Carrito</h1>
               <p className="text-muted-foreground">Gestiona tus productos antes de la compra</p>
@@ -231,7 +231,7 @@ export default function CartPage() {
               className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors duration-300 mb-6"
             >
               <ArrowLeftIcon className="w-4 h-4" />
-              <span>Volver a productos</span>
+              <span>Ver los productos</span>
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Mi Carrito</h1>
             <p className="text-muted-foreground">Gestiona tus productos antes de la compra</p>
